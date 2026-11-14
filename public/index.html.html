@@ -1,0 +1,1678 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مين الصادق ومين الكاذب؟ - النسخة الجماعية (Multiplayer)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=El+Messiri:wght@600;700&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        cairo: ['Cairo', 'sans-serif'],
+                        messiri: ['El Messiri', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: radial-gradient(circle at center, #0F172A 0%, #020617 100%);
+            min-height: 100vh;
+            color: #F8FAFC;
+            user-select: none;
+            overflow-x: hidden;
+        }
+
+        /* الطاولة البيضاوية الفخمة */
+        .table-shape-oval {
+            border-radius: 140px;
+            background: radial-gradient(ellipse at center, #065F46 0%, #044E38 60%, #022C22 100%);
+            border: 14px solid #542609;
+            outline: 4px solid #F59E0B;
+            box-shadow: inset 0 0 80px rgba(0,0,0,0.85), 0 25px 50px rgba(0,0,0,0.8), 0 0 40px rgba(245, 158, 11, 0.35);
+        }
+
+        @media (max-width: 640px) {
+            .table-shape-oval {
+                border-radius: 80px;
+                border-width: 10px;
+            }
+        }
+
+        .question-card-3d {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.95) 100%);
+            border: 2px solid #F59E0B;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6), 0 0 25px rgba(245, 158, 11, 0.25);
+            backdrop-filter: blur(8px);
+        }
+
+        @keyframes questionSwitch {
+            0% { opacity: 0; transform: translateY(15px) scale(0.97); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .animate-question-switch {
+            animation: questionSwitch 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* 3D Card Flip */
+        .card-flip { perspective: 1000px; }
+        .card-inner {
+            transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+        .card-flipped { transform: rotateY(180deg); }
+        .card-front, .card-back { backface-visibility: hidden; }
+        .card-back { transform: rotateY(180deg); }
+
+        .judge-glow {
+            box-shadow: 0 0 25px #F59E0B, 0 0 12px #FBBF24;
+            animation: pulse-border 2s infinite;
+        }
+
+        @keyframes pulse-border {
+            0% { box-shadow: 0 0 15px #F59E0B; }
+            50% { box-shadow: 0 0 35px #FBBF24, 0 0 45px #F59E0B; }
+            100% { box-shadow: 0 0 15px #F59E0B; }
+        }
+
+        /* حركات رمي الطماطم والورود المتزامنة */
+        @keyframes throwParabola {
+            0% { transform: translate(-50%, 120px) scale(0.4) rotate(0deg); opacity: 0; }
+            30% { opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1.4) rotate(360deg); opacity: 1; }
+        }
+        .flying-item-sync {
+            position: fixed;
+            z-index: 9999;
+            pointer-events: none;
+            font-size: 3rem;
+            animation: throwParabola 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+
+        @keyframes tomatoSplatterAnim {
+            0% { transform: translate(-50%, -50%) scale(0.2); opacity: 0; filter: blur(4px); }
+            25% { transform: translate(-50%, -50%) scale(1.25); opacity: 1; filter: blur(0px); }
+            75% { transform: translate(-50%, -50%) scale(1.05); opacity: 0.95; }
+            100% { transform: translate(-50%, -50%) scale(1.1); opacity: 0; }
+        }
+        .tomato-splatter-sync {
+            position: fixed;
+            z-index: 9998;
+            pointer-events: none;
+            animation: tomatoSplatterAnim 1.4s ease-out forwards;
+        }
+
+        @keyframes roseHeartAnim {
+            0% { transform: translate(-50%, -50%) scale(0.4); opacity: 0; }
+            30% { transform: translate(-50%, -70%) scale(1.3); opacity: 1; }
+            100% { transform: translate(-50%, -140%) scale(1.5); opacity: 0; }
+        }
+        .rose-bloom-sync {
+            position: fixed;
+            z-index: 9998;
+            pointer-events: none;
+            font-size: 2.8rem;
+            animation: roseHeartAnim 1.4s ease-out forwards;
+        }
+
+        /* Custom Toast Notification */
+        @keyframes toastSlideIn {
+            0% { transform: translateY(-30px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+        .toast-item {
+            animation: toastSlideIn 0.3s ease-out forwards;
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0F172A; }
+        ::-webkit-scrollbar-thumb { background: #059669; border-radius: 4px; }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen justify-between relative overflow-x-hidden">
+
+    <!-- Toast Notifications Container (بديل احترافي لـ alert) -->
+    <div id="toastContainer" class="fixed top-16 left-1/2 transform -translate-x-1/2 z-[100] flex flex-col gap-2 w-full max-w-md px-4 pointer-events-none"></div>
+
+    <!-- Header -->
+    <header class="w-full bg-slate-900/90 backdrop-blur border-b border-slate-800 py-3 px-4 md:px-6 flex justify-between items-center z-40">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-amber-500 to-yellow-300 flex items-center justify-center text-slate-950 font-black text-xl shadow-lg">؟</div>
+            <div>
+                <h1 class="font-messiri text-lg md:text-2xl font-bold text-amber-400 leading-tight">مين الصادق ومين الكاذب؟</h1>
+                <p class="text-[10px] md:text-xs text-slate-400">النسخة الجماعية المباشرة (Online 100%) - تطوير: عمار (MUI)</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2 md:gap-3">
+            <!-- أدوات التفاعل الأونلاين -->
+            <button id="tomatoThrowBtn" onclick="selectThrowItem('tomato')" title="اختر طماطم ثم اضغط على أي لاعب لرميها عليه أونلاين!" class="w-9 h-9 bg-slate-800 hover:bg-slate-700 text-rose-400 text-sm rounded-lg border border-slate-700 flex items-center justify-center transition active:scale-95">🍅</button>
+            <button id="roseThrowBtn" onclick="selectThrowItem('rose')" title="اختر وردة ثم اضغط على أي لاعب لإهدائها له أونلاين!" class="w-9 h-9 bg-slate-800 hover:bg-slate-700 text-pink-400 text-sm rounded-lg border border-slate-700 flex items-center justify-center transition active:scale-95">🌹</button>
+            <div class="h-5 w-px bg-slate-800"></div>
+            <button id="audioToggleBtn" onclick="toggleSound()" title="كتم / تشغيل الصوت" class="w-9 h-9 bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm rounded-lg border border-slate-700 flex items-center justify-center"><i class="fas fa-volume-up text-emerald-400"></i></button>
+            <button onclick="openCreditModal()" class="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-yellow-400 text-slate-950 text-xs md:text-sm font-black rounded-lg border border-amber-300 flex items-center gap-1.5 shadow-md hover:brightness-110 transition">
+                <i class="fas fa-code"></i><span class="hidden sm:inline">عمار (MUI)</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-grow flex items-center justify-center p-3 sm:p-6 relative z-10 max-w-7xl mx-auto w-full">
+
+        <!-- 1. Lobby Setup Screen: Name & Room Create/Join -->
+        <section id="lobbyScreen" class="w-full max-w-xl bg-slate-900/95 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-2xl backdrop-blur">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-gradient-to-tr from-amber-500 to-yellow-300 rounded-2xl flex items-center justify-center text-slate-950 text-3xl font-black mx-auto mb-3 shadow-lg"><i class="fas fa-users"></i></div>
+                <h2 class="font-messiri text-3xl font-bold text-amber-400 mb-1">انضم إلى لعبة الغرفة</h2>
+                <p class="text-slate-300 text-sm">أدخل اسمك وصورتك الاختيارية، ثم أنشئ غرفة جديدة أو انضم برمز الغرفة!</p>
+                <div id="firebaseConnectionBadge" class="inline-flex items-center gap-1.5 mt-2.5 px-3 py-1 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                    <i class="fas fa-circle-notch fa-spin"></i><span>جاري الاتصال بخادم الأونلاين...</span>
+                </div>
+            </div>
+
+            <div class="space-y-4 mb-6">
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1 font-bold">اسم اللاعب:</label>
+                    <input type="text" id="playerNameInput" placeholder="اكتب اسمك هنا..." maxlength="15" class="w-full bg-slate-950 text-white font-bold px-4 py-3 rounded-xl border border-slate-700 focus:outline-none focus:border-amber-400 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1 font-bold">صورة شخصية (اختياري):</label>
+                    <div class="flex items-center justify-between gap-3 bg-slate-950 p-3 rounded-xl border border-slate-700">
+                        <div class="flex items-center gap-3">
+                            <div id="avatarPreviewBox" class="w-12 h-12 rounded-full bg-indigo-600 flex items-center justify-center text-white text-lg font-bold border border-slate-600 overflow-hidden"><i class="fas fa-user"></i></div>
+                            <span class="text-xs text-slate-400">تظهر صورتك على الطاولة</span>
+                        </div>
+                        <label class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-lg cursor-pointer border border-slate-600 transition">
+                            <i class="fas fa-camera ml-1"></i> اختيار صورة
+                            <input type="file" id="playerAvatarFile" accept="image/*" class="hidden" onchange="previewAvatar(event)">
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button id="createRoomBtn" onclick="createRoom()" class="py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 text-white font-bold rounded-xl shadow-lg text-sm flex items-center justify-center gap-2 transition active:scale-95">
+                    <i class="fas fa-plus-circle"></i><span>إنشاء غرفة جديدة</span>
+                </button>
+                <div class="flex gap-2">
+                    <input type="text" id="joinRoomCodeInput" placeholder="كود الغرفة" maxlength="6" class="w-28 bg-slate-950 text-center font-black uppercase text-amber-400 px-2 py-3 rounded-xl border border-slate-700 text-sm focus:outline-none focus:border-amber-400">
+                    <button id="joinRoomBtn" onclick="joinRoom()" class="flex-grow py-3.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl shadow-lg text-sm flex items-center justify-center gap-1 transition active:scale-95">
+                        <i class="fas fa-sign-in-alt"></i><span>انضمام</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. Room Waiting Room -->
+        <section id="waitingRoomScreen" class="w-full max-w-xl bg-slate-900/95 border border-slate-800 rounded-3xl p-6 md:p-8 shadow-2xl backdrop-blur hidden">
+            <div class="text-center mb-5">
+                <span class="text-xs bg-amber-500/20 text-amber-300 px-3 py-1 rounded-full font-bold border border-amber-500/30">غرفة الانتظار المباشرة</span>
+                <div class="flex items-center justify-center gap-3 mt-3">
+                    <h2 class="font-messiri text-2xl sm:text-3xl font-bold text-amber-400">كود الغرفة: <span id="displayRoomCode" class="text-emerald-400 tracking-widest font-mono">------</span></h2>
+                    <button onclick="copyRoomCode()" title="نسخ كود الغرفة" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 rounded-xl border border-slate-700 text-xs font-bold flex items-center gap-1.5 transition active:scale-95">
+                        <i class="fas fa-copy"></i><span>نسخ</span>
+                    </button>
+                </div>
+                <p class="text-xs text-slate-400 mt-1.5">شارك هذا الكود مع أصدقائك (3 لاعبين على الأقل لتجربة مثالية!)</p>
+            </div>
+
+            <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 mb-6">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="text-xs text-slate-400 font-bold">اللاعبون المتصلون (<span id="waitingCount" class="text-emerald-400">0</span>):</h3>
+                    <span class="text-[11px] text-emerald-400 flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span> متصل بالخادم</span>
+                </div>
+                <div id="waitingPlayersList" class="space-y-2 max-h-56 overflow-y-auto pr-1"></div>
+            </div>
+
+            <div id="hostControls" class="hidden space-y-3">
+                <button onclick="startMultiplayerGame()" class="w-full py-4 bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 text-slate-950 font-black rounded-2xl shadow-xl text-lg flex items-center justify-center gap-2 transition active:scale-95">
+                    <i class="fas fa-play"></i><span>بدء التحدي الآن</span>
+                </button>
+            </div>
+            <div id="guestWaitingNotice" class="text-center text-xs text-amber-300 animate-pulse py-3 bg-amber-500/10 rounded-xl border border-amber-500/20">
+                في انتظار مضيف الغرفة لبدء التحدي...
+            </div>
+        </section>
+
+        <!-- 3. Active Game Table Screen -->
+        <section id="gameScreen" class="w-full h-full flex flex-col items-center justify-center hidden relative">
+            <!-- شريط المعلومات العلوي للطاولة -->
+            <div class="mb-3 bg-slate-900/90 px-4 sm:px-6 py-2 rounded-full border border-amber-500/40 shadow-xl flex flex-wrap items-center justify-center gap-3 sm:gap-4 z-20">
+                <div class="flex items-center gap-1.5"><span class="text-xs text-slate-400">الغرفة:</span><span id="tableRoomCodeBadge" class="font-mono font-bold text-emerald-400 text-xs sm:text-sm">----</span></div>
+                <div class="h-4 w-px bg-slate-800"></div>
+                <div class="flex items-center gap-1.5"><span class="text-xs text-slate-400">الجولة:</span><span id="roundNumberBadge" class="font-bold text-amber-400 text-sm sm:text-base">1</span></div>
+                <div class="h-4 w-px bg-slate-800"></div>
+                <div class="flex items-center gap-1.5"><span class="text-xs text-slate-400">الحكم:</span><span id="currentJudgeNameBadge" class="font-bold text-amber-400 text-sm sm:text-base">...</span></div>
+                <div class="h-4 w-px bg-slate-800"></div>
+                <!-- زر إعادة فتح الكارت السري الخاص باللاعب فقط -->
+                <button id="reopenSecretCardBtn" onclick="reopenMySecretCard()" class="hidden px-3 py-1 bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 border border-emerald-500/40 rounded-full text-xs font-bold flex items-center gap-1.5 transition">
+                    <i class="fas fa-eye"></i><span>كارتي السري</span>
+                </button>
+            </div>
+
+            <!-- شريط تنبيه وضع الرمي -->
+            <div id="throwModeBanner" class="hidden mb-2 bg-rose-600/90 text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-lg flex items-center gap-2 animate-bounce z-30">
+                <span id="throwModeText">اختر لاعباً على الطاولة لرمي الطماطم عليه!</span>
+                <button onclick="cancelThrowItem()" class="bg-slate-950/50 hover:bg-slate-950 px-2 py-0.5 rounded-full text-[10px]">إلغاء</button>
+            </div>
+
+            <!-- الطاولة البيضاوية -->
+            <div id="mainPokerTable" class="relative w-full max-w-4xl aspect-[4/3] sm:aspect-[16/10] md:aspect-[16/9] table-shape-oval flex items-center justify-center p-4 sm:p-8 my-2 transition-all duration-700">
+                <div id="tableCenterStage" class="w-full max-w-md question-card-3d rounded-3xl p-4 sm:p-6 text-center shadow-2xl z-20 flex flex-col items-center justify-center min-h-[210px]"></div>
+                <div id="tablePlayersContainer" class="absolute inset-0 pointer-events-none"></div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Secret Card Modal (خاص بكل لاعب وحده فقط) -->
+    <div id="secretCardModal" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md flex items-center justify-center z-50 p-4 hidden">
+        <div class="w-full max-w-lg bg-slate-900 border-2 border-amber-500/60 rounded-3xl p-6 shadow-2xl flex flex-col items-center text-center relative">
+            <button onclick="closeSecretCardModal()" class="absolute top-4 left-4 w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 flex items-center justify-center text-sm"><i class="fas fa-times"></i></button>
+            <div class="w-full bg-slate-800 px-4 py-2 rounded-xl border border-slate-700 mb-4 text-xs text-slate-300 mt-2">
+                <span class="text-amber-400 font-bold block mb-0.5">السؤال الجاري:</span>
+                <span id="secretModalQuestionText" class="font-bold text-white text-sm">--</span>
+            </div>
+
+            <div id="cardReadinessStep" class="w-full flex flex-col items-center py-4">
+                <div class="w-16 h-16 rounded-full bg-amber-500/20 border-2 border-amber-400 flex items-center justify-center text-amber-400 text-2xl mb-3 animate-bounce"><i class="fas fa-user-lock"></i></div>
+                <h3 class="text-slate-200 font-bold text-base mb-1">كارتك السري جاهز!</h3>
+                <p class="text-slate-400 text-xs mb-6">تأكد أن لا أحد ينظر إلى شاشتك، ثم اضغط لكشف إجابتك السرية.</p>
+                <button onclick="revealSecretCard()" class="px-8 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-base rounded-2xl shadow-xl transition flex items-center gap-3">
+                    <i class="fas fa-eye"></i><span>كشف الكارت السري الآن</span>
+                </button>
+            </div>
+
+            <div id="cardDisplayStep" class="w-full flex flex-col items-center hidden py-2">
+                <div class="flex items-center gap-2 mb-3 bg-slate-800 px-4 py-1.5 rounded-full border border-amber-500/30">
+                    <i class="fas fa-clock text-amber-400 animate-spin"></i>
+                    <span class="text-slate-300 text-xs">يغلق تلقائياً بعد:</span>
+                    <span id="cardCountdownTimer" class="font-black text-amber-400 text-xl w-6">8</span>
+                </div>
+                <div class="w-full max-w-xs h-60 card-flip my-1">
+                    <div id="flipCardInner" class="w-full h-full relative card-inner rounded-2xl shadow-2xl">
+                        <div class="absolute inset-0 bg-gradient-to-br from-amber-700 to-amber-900 rounded-2xl border-4 border-amber-400 flex flex-col items-center justify-center p-4 card-front shadow-xl">
+                            <i class="fas fa-question-circle text-5xl text-amber-300/60 mb-2"></i>
+                            <span class="font-messiri font-bold text-amber-200">كارت الإجابة السري</span>
+                        </div>
+                        <div id="cardBackContent" class="absolute inset-0 bg-slate-800 rounded-2xl border-4 border-emerald-500 flex flex-col justify-between p-5 card-back shadow-xl">
+                            <div class="text-xs text-slate-400 flex justify-between items-center w-full border-b border-slate-700 pb-2">
+                                <span>إجابتك السرية</span><i class="fas fa-shield-alt text-emerald-400"></i>
+                            </div>
+                            <div class="my-auto py-2">
+                                <h4 id="secretAnswerText" class="font-messiri text-xl sm:text-2xl font-black text-white mb-2 tracking-wide leading-snug break-words px-1">...</h4>
+                                <div id="secretTruthBadge" class="inline-block px-4 py-1.5 rounded-full text-xs font-black shadow">--</div>
+                            </div>
+                            <div class="text-[11px] text-amber-300/90 bg-slate-900 py-1.5 px-3 rounded-lg border border-amber-500/20">
+                                <i class="fas fa-microphone-alt text-amber-400 ml-1"></i>أقنع الحكم أن إجابتك هي الحقيقة!
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button onclick="closeSecretCardModal()" class="mt-4 px-6 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700">حفظت الإجابة (إغلاق)</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Judge Voting Modal (يظهر للحكم فقط، وبدون كشف الحقيقة قبل التصويت!) -->
+    <div id="votingModal" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md flex items-center justify-center z-50 p-4 hidden">
+        <div class="w-full max-w-2xl bg-slate-900 border-2 border-amber-500/60 rounded-3xl p-6 shadow-2xl flex flex-col max-h-[90vh]">
+            <div class="flex justify-between items-center pb-4 border-b border-slate-800">
+                <div>
+                    <span class="text-xs bg-amber-500/20 text-amber-300 px-3 py-1 rounded-full font-bold">مرحلة التصويت والحكم</span>
+                    <h2 class="font-messiri text-2xl font-bold text-amber-400 mt-1">من الصادق ومن الكاذب؟</h2>
+                </div>
+                <button onclick="document.getElementById('votingModal').classList.add('hidden')" class="w-9 h-9 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center"><i class="fas fa-times"></i></button>
+            </div>
+            <p class="text-xs text-slate-400 mt-3 bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+                <i class="fas fa-info-circle text-amber-400 ml-1"></i> استمع لإجابات اللاعبين صوتياً أو كتابياً، ثم حدد من تظنه <strong class="text-emerald-400">صادقاً</strong> ومن تظنه <strong class="text-rose-400">كاذباً</strong>!
+            </p>
+            <div id="votingPlayersList" class="flex-grow overflow-y-auto py-4 space-y-3 my-1 pr-1"></div>
+            <div class="pt-4 border-t border-slate-800 flex justify-end" id="submitVoteContainer">
+                <button onclick="submitJudgeVotes()" class="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 text-white font-bold rounded-xl shadow-lg text-lg flex items-center justify-center gap-2 transition active:scale-95">
+                    <i class="fas fa-gavel"></i><span>اعتماد الحكم وكشف الحقائق</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Round Results Modal (يظهر لجميع اللاعبين في نفس اللحظة بعد تصويت الحكم!) -->
+    <div id="roundResultsModal" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md flex items-center justify-center z-50 p-4 hidden">
+        <div class="w-full max-w-2xl bg-slate-900 border-2 border-amber-500/70 rounded-3xl p-6 shadow-2xl flex flex-col max-h-[90vh]">
+            <div class="text-center pb-4 border-b border-slate-800">
+                <span class="text-xs bg-emerald-500/20 text-emerald-300 px-3 py-1 rounded-full font-bold border border-emerald-500/30">نتائج الجولة <span id="resultsRoundNum">1</span></span>
+                <h2 class="font-messiri text-2xl sm:text-3xl font-bold text-amber-400 mt-2">كشف الستار والحقائق!</h2>
+                <div class="mt-2 bg-slate-950 px-4 py-2 rounded-xl border border-slate-800 inline-block">
+                    <span class="text-xs text-slate-400">الإجابة الصحيحة للسؤال هي: </span>
+                    <span id="resultsCorrectAnswer" class="text-sm sm:text-base font-black text-emerald-400">--</span>
+                </div>
+            </div>
+
+            <div id="resultsPlayersBreakdown" class="flex-grow overflow-y-auto py-4 space-y-2.5 my-1 pr-1"></div>
+
+            <div class="pt-4 border-t border-slate-800">
+                <div id="nextRoundControlArea" class="hidden">
+                    <button id="nextRoundActionBtn" onclick="startNextRound()" class="w-full py-3.5 bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 text-slate-950 font-black rounded-xl shadow-lg text-base flex items-center justify-center gap-2 transition active:scale-95">
+                        <i class="fas fa-forward"></i><span>بدء الجولة التالية</span>
+                    </button>
+                </div>
+                <div id="waitingNextRoundNotice" class="text-center text-xs text-amber-300 animate-pulse py-2">
+                    في انتظار المضيف أو الحكم لمتابعة اللعبة...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Over & Leaderboard Modal (نهاية المباراة وعرض الفائزين قبل العودة للوبي) -->
+    <div id="gameOverModal" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md flex items-center justify-center z-50 p-4 hidden">
+        <div class="w-full max-w-xl bg-slate-900 border-2 border-amber-500/80 rounded-3xl p-6 sm:p-8 shadow-2xl flex flex-col max-h-[90vh] text-center">
+            <div class="pb-4 border-b border-slate-800">
+                <div class="w-16 h-16 bg-gradient-to-tr from-amber-500 to-yellow-300 text-slate-950 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-3 shadow-xl animate-bounce">
+                    <i class="fas fa-trophy"></i>
+                </div>
+                <span class="text-xs bg-amber-500/20 text-amber-300 px-3 py-1 rounded-full font-bold border border-amber-500/30">انتهت جميع الجولات</span>
+                <h2 class="font-messiri text-2xl sm:text-3xl font-black text-amber-400 mt-2">لوحة المتصدرين والنتائج النهائية</h2>
+                <p id="winnerAnnouncementText" class="text-sm text-emerald-400 font-bold mt-1">--</p>
+            </div>
+
+            <div id="finalLeaderboardList" class="flex-grow overflow-y-auto py-4 space-y-2.5 my-2 pr-1 text-right"></div>
+
+            <div class="pt-4 border-t border-slate-800">
+                <div id="returnLobbyHostArea" class="hidden">
+                    <button onclick="returnAllToLobby()" class="w-full py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 text-white font-black rounded-xl shadow-lg text-base flex items-center justify-center gap-2 transition active:scale-95">
+                        <i class="fas fa-home"></i><span>العودة إلى غرفة الانتظار (اللوبي)</span>
+                    </button>
+                </div>
+                <div id="returnLobbyGuestNotice" class="text-center text-xs text-amber-300 animate-pulse py-2">
+                    في انتظار المضيف لإعادة الجميع إلى غرفة الانتظار...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Credit Modal -->
+    <div id="creditModal" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md flex items-center justify-center z-50 p-4 hidden">
+        <div class="w-full max-w-md bg-slate-900 border-2 border-amber-500/70 rounded-3xl p-6 shadow-2xl text-center relative">
+            <div class="w-20 h-20 bg-gradient-to-tr from-amber-500 to-yellow-300 text-slate-950 rounded-2xl flex items-center justify-center text-4xl mx-auto mb-4 shadow-xl"><i class="fas fa-code"></i></div>
+            <span class="text-xs bg-amber-500/20 text-amber-300 px-3 py-1 rounded-full font-bold border border-amber-500/30">المطور والبرمجة</span>
+            <h2 class="font-messiri text-3xl font-black text-amber-400 mt-2 mb-1">عمار (MUI)</h2>
+            <p class="text-slate-300 text-sm mb-6 leading-relaxed">تم تطوير هذه النسخة الجماعية (Multiplayer) المباشرة بواسطة <strong class="text-amber-300">عمار (MUI)</strong> لتعمل أونلاين بين الأصدقاء في أي مكان!</p>
+            <button onclick="closeCreditModal()" class="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold rounded-xl text-base shadow-lg">إغلاق</button>
+        </div>
+    </div>
+
+    <!-- Firebase App & Multiplayer Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // 100 سؤال ثقافة عامة ممتع وذكي (جميع الإجابات والخيارات كلمة أو كلمتين فقط بدون أي تلميح)
+        const QUESTION_BANK = [
+            { category: "عالم الحيوان", question: "ما هو الحيوان الذي يمتلك أقوى عضة بين الكائنات الحية حالياً؟", correct: "التمساح المائي", wrongs: ["القرش الأبيض", "الدب القطبي", "الأسد الإفريقي", "الضبع البقعي", "فرس النهر", "النمر السيبيري", "الذئب الرمادي"] },
+            { category: "عجائب الطبيعة", question: "ما هو الحيوان المنقرض الذي كان حجمه كالصقر بسبب وفرة الأكسجين قديماً؟", correct: "اليعسوب العملاق", wrongs: ["العقرب البحري", "الخفاش القديم", "السرعوف الملكي", "الفراشة العملاقة", "الزنبور الصخري", "النمل الناري", "الجراد الصحراوي"] },
+            { category: "علوم واكتشافات", question: "من هو العالم الذي اكتشف دور الضوء في عملية التمثيل الضوئي؟", correct: "يان إنجنهاوس", wrongs: ["لويس باستور", "روبرت هوك", "غريغور مندل", "كارل لينيوس", "ألكسندر فلمنج", "مايكل فاراداي", "أنطوان لافوازييه"] },
+            { category: "جغرافيا وبحار", question: "ما هي أعمق نقطة محيطية معروفة في قاع كوكب الأرض؟", correct: "خندق ماريانا", wrongs: ["خندق تونغا", "خندق جاوا", "حوض اليابان", "خندق الفلبين", "منخفض بورتوريكو", "بحر سارجاسو", "خندق كيرماديك"] },
+            { category: "معالم عالمية", question: "ما هو اسم أطول برج وناطحة سحاب في العالم حالياً؟", correct: "برج خليفة", wrongs: ["برج شانغهاي", "برج ميرديكا", "برج الساعة", "برج طوكيو", "برج المملكة", "برج بتروناس", "برج تايبيه"] },
+            { category: "الفضاء والكون", question: "ما هو الكوكب الذي يمتلك أكبر عدد من الأقمار في مجموعتنا الشمسية؟", correct: "كوكب زحل", wrongs: ["كوكب المشتري", "كوكب أورانوس", "كوكب نبتون", "كوكب المريخ", "كوكب الزهرة", "كوكب عطارد", "كوكب بلوتو"] },
+            { category: "تاريخ وحروب", question: "ما هي المدينة التاريخية التي دُمرت بحرب شهيرة بسبب حصان خشبي؟", correct: "طروادة", wrongs: ["قرطاجة", "إسبرطة", "بابل", "أثينا", "تدمر", "نينوى", "روما"] },
+            { category: "أحياء وتشريح", question: "ما هو الكائن البحري الذي يمتلك ثلاثة قلوب وتسعة أدمغة؟", correct: "الأخطبوط", wrongs: ["الحبار العملاق", "قنديل البحر", "نجم البحر", "فرس البحر", "السلطعون الملكي", "سمك القرش", "الجمبري"] },
+            { category: "كيمياء ومعادن", question: "ما هو أثقل عنصر طبيعي مستقر موجود في القشرة الأرضية؟", correct: "اليورانيوم", wrongs: ["البلوتونيوم", "الرصاص", "الذهب", "الأوزميوم", "البلاتين", "الزئبق", "التنغستن"] },
+            { category: "غرائب الحيوانات", question: "ما هو الحيوان الأسترالي الوحيد الذي يخرج فضلاته على شكل مكعبات؟", correct: "الوامبات", wrongs: ["الكوالا", "الكنغر", "الخلد", "الأبوسوم", "شيطان تسمانيا", "الولب", "النيص"] },
+            { category: "جغرافيا عربية", question: "ما هي الدولة العربية التي تمر بها دائرة الاستواء؟", correct: "الصومال", wrongs: ["السودان", "اليمن", "جيبوتي", "موريتانيا", "عُمان", "جزر القمر", "ليبيا"] },
+            { category: "تاريخ إسلامي", question: "من هو القائد المسلم الذي فتح بلاد السند في العصر الأموي؟", correct: "محمد القاسم", wrongs: ["قتيبة الباهلي", "طارق زياد", "موسى نصير", "عقبة نافع", "عمرو العاص", "سعد وقاص", "خالد الوليد"] },
+            { category: "اختراعات", question: "من هو العالم المسلم الملقب بأبي الجراحة الحديثة؟", correct: "الزهراوي", wrongs: ["ابن سينا", "الرازي", "ابن النفيس", "ابن الهيثم", "البيروني", "الخوارزمي", "جابر حيان"] },
+            { category: "عواصم العالم", question: "ما هي عاصمة دولة أستراليا الرسمية؟", correct: "كانبرا", wrongs: ["سيدني", "ملبورن", "بريزبان", "بيرث", "أديلايد", "أوكلاند", "داروين"] },
+            { category: "رياضة", question: "ما هو المنتخب الأكثر تتويجاً بكأس العالم لكرة القدم؟", correct: "البرازيل", wrongs: ["ألمانيا", "إيطاليا", "الأرجنتين", "فرنسا", "إسبانيا", "أوروغواي", "إنجلترا"] },
+            { category: "علوم الفلك", question: "ما هو أشد كواكب المجموعة الشمسية حرارة على الإطلاق؟", correct: "الزهرة", wrongs: ["عطارد", "المريخ", "المشتري", "زحل", "أورانوس", "نبتون", "الشمس"] },
+            { category: "لغات وثقافات", question: "ما هي اللغة الرسمية المعتمدة في دولة البرازيل؟", correct: "البرتغالية", wrongs: ["الإسبانية", "البرازيلية", "الفرنسية", "الإيطالية", "الإنجليزية", "الهولندية", "اللاتينية"] },
+            { category: "جسم الإنسان", question: "ما هي أكبر غدة صماء موجودة في جسم الإنسان؟", correct: "الغدة الدرقية", wrongs: ["الغدة النخامية", "الغدة الكظرية", "البنكرياس", "الكبد", "الغدة الصنوبرية", "الطحال", "الغدة اللعابية"] },
+            { category: "جغرافيا", question: "ما هو أطول نهر في قارة أوروبا؟", correct: "نهر الفولغا", wrongs: ["نهر الدانوب", "نهر الراين", "نهر السين", "نهر التايمز", "نهر الأورال", "نهر دنيبر", "نهر إلبه"] },
+            { category: "فنون وأدب", question: "من هو الرسام العالمي الذي رسم لوحة الموناليزا الشهيرة؟", correct: "ليوناردو دافنشي", wrongs: ["بابلو بيكاسو", "فان جوخ", "مايكل أنجلو", "رفائيل", "سلفادور دالي", "كلود مونيه", "رامبرانت"] },
+            { category: "عالم الطيور", question: "ما هو الطائر الوحيد القادر على الطيران إلى الخلف؟", correct: "الطنان", wrongs: ["السنونو", "الرفراف", "اليمام", "العندليب", "الهدهد", "البلبل", "السمان"] },
+            { category: "تاريخ قديم", question: "في أي دولة حديثة تقع آثار مدينة بابل التاريخية؟", correct: "العراق", wrongs: ["سوريا", "الأردن", "إيران", "تركيا", "مصر", "لبنان", "اليمن"] },
+            { category: "فيزياء", question: "ما هي وحدة قياس شدة التيار الكهربائي؟", correct: "الأمبير", wrongs: ["الفولت", "الأوم", "الواط", "الجول", "الهرتز", "النيوتن", "الكولوم"] },
+            { category: "بحار ومحيطات", question: "ما هو البحر الذي يفصل بين قارتي آسيا وأفريقيا؟", correct: "البحر الأحمر", wrongs: ["البحر المتوسط", "بحر العرب", "البحر الأسود", "بحر قزوين", "البحر الميت", "بحر إيجة", "بحر عمان"] },
+            { category: "مكتشفون", question: "من هو الرحالة الأوروبي الذي وصل إلى رأس الرجاء الصالح؟", correct: "فاسكو داغاما", wrongs: ["كريستوفر كولومبوس", "فرديناند ماجلان", "ماركو بولو", "جيمس كوك", "أميريجو فسبوتشي", "هنري الملاح", "جون كابوت"] },
+            { category: "جغرافيا", question: "ما هي أكبر جزيرة غير قارية في العالم من حيث المساحة؟", correct: "جرينلاند", wrongs: ["مدغشقر", "بورنيو", "سومطرة", "بريطانيا", "آيسلندا", "كوبا", "اليابان"] },
+            { category: "علوم", question: "ما هو الغاز الذي يشكل النسبة الأكبر من الغلاف الجوي للأرض؟", correct: "النيتروجين", wrongs: ["الأكسجين", "الأرجون", "الهيدروجين", "الهيليوم", "الميثان", "الأوزون", "النيون"] },
+            { category: "عالم الحيوان", question: "ما هو الحيوان الذي لا يستطيع إخراج لسانه من فمه؟", correct: "التمساح", wrongs: ["السلحفاة", "الحرباء", "الضفدع", "السحلية", "الثعبان", "الإغوانا", "الورل"] },
+            { category: "تاريخ", question: "من هو أول رائد فضاء صعد إلى الفضاء الخارجي؟", correct: "يوري غاغارين", wrongs: ["نيل أرمسترونغ", "باز ألدرين", "جون غلين", "ألان شيبارد", "فالنتينا تيريشكوفا", "مايكل كولينز", "أليكسي ليونوف"] },
+            { category: "عواصم", question: "ما هي عاصمة دولة كندا؟", correct: "أوتاوا", wrongs: ["تورونتو", "فانكوفر", "مونتريال", "كالجاري", "كيبيك", "إدمونتون", "وينيبيغ"] },
+            { category: "معادن", question: "ما هو المعدن الوحيد الذي يوجد في الحالة السائلة في درجة حرارة الغرفة؟", correct: "الزئبق", wrongs: ["البروم", "الغاليوم", "السيزيوم", "الرصاص", "القصدير", "الصوديوم", "البوتاسيوم"] },
+            { category: "أحياء", question: "ما هي المادة المسؤولة عن إعطاء اللون الأخضر لأوراق النباتات؟", correct: "الكلوروفيل", wrongs: ["الميلانين", "الكاروتين", "الهيموغلوبين", "السليلوز", "الكيراتين", "الكولاجين", "النشا"] },
+            { category: "جغرافيا", question: "ما هي أعلى قمة جبلية في قارة أفريقيا؟", correct: "كليمنجارو", wrongs: ["توبقال", "كينيا", "إيفرست", "الأطلس", "سيناء", "روينزوري", "ميرو"] },
+            { category: "تاريخ", question: "ما اسم السفينة الشهيرة التي غرقت في المحيط الأطلسي عام 1912؟", correct: "تيتانيك", wrongs: ["بريتانيك", "أوليمبيك", "لوسيتانيا", "كوين ماري", "إندورانس", "سانتا ماريا", "ماي فلاور"] },
+            { category: "عالم البحار", question: "ما هو أسرع كائن بحري في السباحة على الإطلاق؟", correct: "سمكة الشراع", wrongs: ["القرش ماكو", "الدلفين", "الحوت القاتل", "التونة الزرقاء", "سمك السيف", "الباراكودا", "الأخطبوط"] },
+            { category: "ثقافة عامة", question: "كم عدد لاعبي فريق كرة السلة داخل الملعب لكل فريق؟", correct: "خمسة لاعبين", wrongs: ["ستة لاعبين", "سبعة لاعبين", "تسعة لاعبين", "أربعة لاعبين", "ثمانية لاعبين", "عشرة لاعبين", "أحد عشر"] },
+            { category: "جغرافيا", question: "ما هي الدولة التي تلقب بأرض الشمس المشرقة؟", correct: "اليابان", wrongs: ["الصين", "كوريا الجنوبية", "تايلاند", "الفلبين", "فيتنام", "إندونيسيا", "ماليزيا"] },
+            { category: "علوم", question: "ما هو اسم الجهاز المستخدم لقياس الضغط الجوي؟", correct: "البارومتر", wrongs: ["الترمومتر", "الهيجرومتر", "الأنيمومتر", "السيزموغراف", "الفولتميتر", "الأميتر", "المانومتر"] },
+            { category: "تاريخ", question: "ما هي الحضارة القديمة التي ابتكرت الكتابة المسمارية؟", correct: "السومرية", wrongs: ["الفرعونية", "الفينيقية", "الآشورية", "البابلية", "الإغريقية", "الرومانية", "المايا"] },
+            { category: "عواصم", question: "ما هي عاصمة دولة سويسرا الإدارية؟", correct: "برن", wrongs: ["زيورخ", "جنيف", "بازل", "لوزان", "لوغانو", "لوسيرن", "فيينا"] },
+            { category: "جسم الإنسان", question: "ما هو أصغر عظم في جسم الإنسان؟", correct: "عظمة الركاب", wrongs: ["عظمة المطرقة", "عظمة السندان", "الترقوة", "الرضفة", "القص", "الكعبرة", "الشظية"] },
+            { category: "الفضاء", question: "ما هو الكوكب المعروف بلقب الكوكب الأحمر؟", correct: "المريخ", wrongs: ["الزهرة", "عطارد", "المشتري", "زحل", "نبتون", "أورانوس", "بلوتو"] },
+            { category: "عالم الحيوان", question: "ما هو الحيوان الذي يمتلك أطول فترة حمل بين الثدييات البرية؟", correct: "الفيل", wrongs: ["الزرافة", "وحيد القرن", "فرس النهر", "الجمل", "الدب", "الحصان", "الجاموس"] },
+            { category: "جغرافيا", question: "في أي قارة تقع صحراء أتاكاما الأكثر جفافاً في العالم؟", correct: "أمريكا الجنوبية", wrongs: ["أفريقيا", "آسيا", "أستراليا", "أمريكا الشمالية", "أوروبا", "القطب الجنوبي", "الشرق الأوسط"] },
+            { category: "اختراعات", question: "من هو مخترع المصباح الكهربائي العملي؟", correct: "توماس إديسون", wrongs: ["نيكولا تسلا", "غراهام بيل", "ماركوني", "جيمس واط", "بنجامين فرانكلين", "أليساندرو فولتا", "مايكل فاراداي"] },
+            { category: "ثقافة عامة", question: "ما هو اللون الناتج عن خلط اللونين الأزرق والأصفر؟", correct: "الأخضر", wrongs: ["البنفسجي", "البرتقالي", "البني", "الرمادي", "الوردي", "الفيروزي", "الكحلي"] },
+            { category: "عالم النبات", question: "ما هي الدولة الأولى عالمياً في إنتاج البن والقهوة؟", correct: "البرازيل", wrongs: ["كولومبيا", "فيتنام", "إثيوبيا", "إندونيسيا", "اليمن", "الهند", "المكسيك"] },
+            { category: "رياضة", question: "في أي رياضة يستخدم مصطلح التسلل؟", correct: "كرة القدم", wrongs: ["كرة السلة", "التنس", "الكرة الطائرة", "البيسبول", "الغولف", "الملاكمة", "السباحة"] },
+            { category: "تاريخ", question: "ما هي المدينة التي كانت عاصمة للدولة العثمانية قبل إسطنبول؟", correct: "أدرنة", wrongs: ["بورصة", "أنقرة", "قونية", "إزمير", "طرابزون", "دمشق", "بغداد"] },
+            { category: "علوم", question: "ما هو العنصر الكيميائي الذي رمزه في الجدول الدوري Fe؟", correct: "الحديد", wrongs: ["الفضة", "الذهب", "النحاس", "الفلور", "الفسفور", "الرصاص", "القصدير"] },
+            { category: "عواصم", question: "ما هي عاصمة دولة تركيا؟", correct: "أنقرة", wrongs: ["إسطنبول", "إزمير", "أنطاليا", "بورصة", "أضنة", "قونية", "طرابزون"] },
+            { category: "عالم الحيوان", question: "ما هو أسرع حيوان بري في العالم؟", correct: "الفهد", wrongs: ["الأسد", "النمر", "الغزال", "النعامة", "الذئب", "الحصان", "الأرنب البري"] },
+            { category: "جغرافيا", question: "ما هي أكبر دولة في العالم من حيث المساحة؟", correct: "روسيا", wrongs: ["كندا", "الصين", "الولايات المتحدة", "البرازيل", "أستراليا", "الهند", "الأرجنتين"] },
+            { category: "أحياء", question: "ما هي فصيلة الدم التي تلقب بالمعطي العام؟", correct: "فصيلة O", wrongs: ["فصيلة A", "فصيلة B", "فصيلة AB", "فصيلة A+", "فصيلة B+", "فصيلة AB+", "فصيلة RH"] },
+            { category: "ثقافة عامة", question: "كم عدد ألوان قوس قزح المرئية؟", correct: "سبعة ألوان", wrongs: ["ستة ألوان", "ثمانية ألوان", "خمسة ألوان", "تسعة ألوان", "عشرة ألوان", "أربعة ألوان", "اثنا عشر"] },
+            { category: "جغرافيا عربية", question: "ما هي أصغر دولة عربية من حيث المساحة؟", correct: "البحرين", wrongs: ["قطر", "لبنان", "الكويت", "جيبوتي", "جزر القمر", "فلسطين", "الأردن"] },
+            { category: "تاريخ", question: "من هو القائد الذي بنى مدينة القاهرة في العصر الفاطمي؟", correct: "جوهر الصقلي", wrongs: ["المعز لدين الله", "صلاح الدين", "أحمد بن طولون", "عمرو بن العاص", "الظاهر بيبرس", "قطز", "محمد علي"] },
+            { category: "علوم", question: "ما هو الكوكب الأقرب إلى الشمس في المجموعة الشمسية؟", correct: "عطارد", wrongs: ["الزهرة", "الأرض", "المريخ", "المشتري", "زحل", "أورانوس", "نبتون"] },
+            { category: "عالم الحيوان", question: "ما هو الحيوان الذي ينام وإحدى عينيه مفتوحة؟", correct: "الدلفين", wrongs: ["القرش", "التمساح", "البومة", "النسر", "الحوت", "الفقمة", "البطريق"] },
+            { category: "عواصم", question: "ما هي عاصمة دولة المغرب؟", correct: "الرباط", wrongs: ["الدار البيضاء", "مراكش", "فاس", "طنجة", "أغادير", "مكناس", "وجدة"] },
+            { category: "اختراعات", question: "من هو مخترع الهاتف السلكي؟", correct: "غراهام بيل", wrongs: ["توماس إديسون", "ماركوني", "نيكولا تسلا", "جون بيرد", "أليساندرو فولتا", "لويس برايل", "يوهانس غوتنبرغ"] },
+            { category: "جغرافيا", question: "ما هو المضيق الذي يفصل بين قارتي آسيا وأمريكا الشمالية؟", correct: "مضيق بيرينغ", wrongs: ["مضيق جبل طارق", "مضيق هرمز", "مضيق باب المندب", "مضيق البوسفور", "مضيق ملقا", "مضيق ماجلان", "مضيق دوفر"] },
+            { category: "أحياء", question: "كم عدد حجرات قلب الإنسان السليم؟", correct: "أربع حجرات", wrongs: ["حجرتان", "ثلاث حجرات", "خمس حجرات", "ست حجرات", "حجرة واحدة", "سبع حجرات", "ثماني حجرات"] },
+            { category: "رياضة", question: "كل كم سنة تقام دورة الألعاب الأولمبية الصيفية؟", correct: "أربع سنوات", wrongs: ["سنتان", "ثلاث سنوات", "خمس سنوات", "ست سنوات", "كل سنة", "ثماني سنوات", "عشر سنوات"] },
+            { category: "عالم النبات", question: "ما هي الشجرة التي يتخذها لبنان شعاراً في علمه الوطني؟", correct: "شجرة الأرز", wrongs: ["شجرة الزيتون", "شجرة النخيل", "شجرة البلوط", "شجرة الصنوبر", "شجرة السنديان", "شجرة الكرز", "شجرة القيقب"] },
+            { category: "تاريخ", question: "في أي عام انتهت الحرب العالمية الثانية؟", correct: "عام 1945", wrongs: ["عام 1944", "عام 1946", "عام 1939", "عام 1942", "عام 1918", "عام 1950", "عام 1948"] },
+            { category: "عواصم", question: "ما هي عاصمة دولة البرازيل؟", correct: "برازيليا", wrongs: ["ريو دي جانيرو", "ساو باولو", "سلفادور", "فورتاليزا", "بيلو هوريزونتي", "ماناوس", "كوريتيبا"] },
+            { category: "علوم", question: "ما هو الفيتامين الذي يصنعه الجلد عند التعرض لأشعة الشمس؟", correct: "فيتامين د", wrongs: ["فيتامين ج", "فيتامين أ", "فيتامين ب", "فيتامين هـ", "فيتامين ك", "فيتامين ب12", "الحديد"] },
+            { category: "عالم الحيوان", question: "ما هو الحيوان الذي يمتلك لساناً أطول من نصف طول جسمه؟", correct: "الحرباء", wrongs: ["الضفدع", "آكل النمل", "الزرافة", "الثعبان", "السحلية", "التمساح", "السلحفاة"] },
+            { category: "جغرافيا", question: "ما هي الدولة التي تضم أكبر عدد من البراكين النشطة في العالم؟", correct: "إندونيسيا", wrongs: ["اليابان", "آيسلندا", "إيطاليا", "الفلبين", "تشيلي", "المكسيك", "روسيا"] },
+            { category: "ثقافة عامة", question: "ما هو المعدن الذي يطلق عليه الذهب الأسود؟", correct: "البترول", wrongs: ["الفحم الحجري", "الحديد", "الألماس", "البلاتين", "الغاز الطبيعي", "اليورانيوم", "النحاس"] },
+            { category: "عواصم", question: "ما هي عاصمة دولة اليابان؟", correct: "طوكيو", wrongs: ["كيوتو", "أوساكا", "هيروشيما", "ناغويا", "يوكوهاما", "سابورو", "كوبي"] },
+            { category: "علوم", question: "ما هو الغاز المسؤول عن ظاهرة الاحتباس الحراري بشكل رئيسي؟", correct: "ثاني أكسيد الكربون", wrongs: ["الأكسجين", "النيتروجين", "الهيليوم", "الأرجون", "الهيدروجين", "النيون", "الكلور"] },
+            { category: "تاريخ", question: "من هو مؤسس علم الجبر في الرياضيات؟", correct: "الخوارزمي", wrongs: ["ابن الهيثم", "البيروني", "عمر الخيام", "إقليدس", "فيثاغورس", "أرخميدس", "ابن سينا"] },
+            { category: "عالم الحيوان", question: "ما هو أكبر طائر في العالم من حيث الحجم والوزن؟", correct: "النعامة", wrongs: ["البطريق الإمبراطور", "النسر الذهبي", "البجع", "الكوندور", "الطاووس", "القطرس", "البومة الثلجية"] },
+            { category: "جغرافيا", question: "ما هي القارة الوحيدة الخالية تماماً من الزواحف والثعابين؟", correct: "أنتاركتيكا", wrongs: ["أوروبا", "أستراليا", "أمريكا الشمالية", "آسيا", "أفريقيا", "أمريكا الجنوبية", "جرينلاند"] },
+            { category: "أحياء", question: "ما هو العضو المسؤول عن تنقية الدم من السموم في جسم الإنسان؟", correct: "الكبد", wrongs: ["القلب", "الرئتان", "المعدة", "البنكرياس", "الطحال", "المرارة", "الأمعاء"] },
+            { category: "عواصم", question: "ما هي عاصمة دولة إسبانيا؟", correct: "مدريد", wrongs: ["برشلونة", "إشبيلية", "فالنسيا", "غرناطة", "ملقا", "قرطبة", "بلباو"] },
+            { category: "ثقافة عامة", question: "كم عدد مربعات رقعة الشطرنج القياسية؟", correct: "64 مربعاً", wrongs: ["32 مربعاً", "48 مربعاً", "72 مربعاً", "81 مربعاً", "100 مربع", "50 مربعاً", "36 مربعاً"] },
+            { category: "عالم البحار", question: "ما هو أكبر حيوان على وجه الأرض حالياً وفي التاريخ؟", correct: "الحوت الأزرق", wrongs: ["القرش الحوتي", "الحوت الأحدب", "الأخطبوط العملاق", "الفيل الأفريقي", "الميجالدون", "حوت العنبر", "فرس النهر"] },
+            { category: "جغرافيا عربية", question: "في أي دولة عربية تقع مدينة البتراء الأثرية؟", correct: "الأردن", wrongs: ["سوريا", "لبنان", "فلسطين", "العراق", "السعودية", "مصر", "اليمن"] },
+            { category: "علوم", question: "ما هي سرعة الضوء في الفراغ تقريباً في الثانية الواحدة؟", correct: "300 ألف كم", wrongs: ["150 ألف كم", "500 ألف كم", "100 ألف كم", "340 متراً", "مليون كم", "50 ألف كم", "200 ألف كم"] },
+            { category: "تاريخ", question: "ما هو الاسم القديم لمدينة إسطنبول التركية؟", correct: "القسطنطينية", wrongs: ["أنطاكية", "إزمير", "طروادة", "أفسس", "نيقية", "قرطبة", "إشبيلية"] },
+            { category: "عواصم", question: "ما هي عاصمة دولة الأرجنتين؟", correct: "بوينس آيرس", wrongs: ["سانتياغو", "ليما", "بوغوتا", "مونتيفيديو", "كاراكاس", "كيتو", "لاباز"] },
+            { category: "عالم الحيوان", question: "ما هو الحيوان الذي يمتلك بصمات أصابع مطابقة لبصمات الإنسان؟", correct: "الكوالا", wrongs: ["الشمبانزي", "الغوريلا", "إنسان الغاب", "الراكون", "القرد", "الدب", "الكنغر"] },
+            { category: "جغرافيا", question: "ما هو أطول نهر في العالم؟", correct: "نهر النيل", wrongs: ["نهر الأمازون", "نهر المسيسيبي", "نهر اليانغتسي", "نهر الفرات", "نهر الدانوب", "نهر الكونغو", "نهر الفولغا"] },
+            { category: "اختراعات", question: "من هو مخترع نظام الكتابة للمكفوفين؟", correct: "لويس برايل", wrongs: ["غراهام بيل", "توماس إديسون", "يوهانس غوتنبرغ", "ألفريد نوبل", "لويس باستور", "ماركوني", "جيمس واط"] },
+            { category: "ثقافة عامة", question: "ما هي العملة الرسمية لدولة اليابان؟", correct: "الين", wrongs: ["اليوان", "الوون", "الروبية", "البات", "الدونغ", "الرينغيت", "البيزو"] },
+            { category: "الفضاء", question: "كم يستغرق ضوء الشمس للوصول إلى كوكب الأرض تقريباً؟", correct: "ثماني دقائق", wrongs: ["ثانية واحدة", "دقيقة واحدة", "ساعة كاملة", "نصف ساعة", "خمس عشرة دقيقة", "عشرون دقيقة", "ثلاث دقائق"] },
+            { category: "عواصم", question: "ما هي عاصمة دولة ألمانيا؟", correct: "برلين", wrongs: ["ميونخ", "فرانكفورت", "هامبورغ", "كولونيا", "شتوتغارت", "دوسلدورف", "بون"] },
+            { category: "عالم الحيوان", question: "ما هو الحيوان الذي لا يشرب الماء طوال حياته ويموت إذا شربه؟", correct: "الجرذ الكنغري", wrongs: ["الجمل", "اليربوع", "الضب", "الكوالا", "السحلية", "الثعلب القطبي", "السلحفاة"] },
+            { category: "جغرافيا", question: "ما هي أكبر صحراء رملية حارة في العالم؟", correct: "الصحراء الكبرى", wrongs: ["الربع الخالي", "صحراء جوبي", "صحراء كالاهاري", "صحراء أتاكاما", "صحراء النفود", "صحراء موهافي", "صحراء سيناء"] },
+            { category: "علوم", question: "ما هو الجهاز الذي يستخدم لرؤية الكائنات الدقيقة جداً؟", correct: "المجهر", wrongs: ["التلسكوب", "المنظار", "البيروسكوب", "البارومتر", "الرادار", "السونار", "المطياف"] },
+            { category: "تاريخ", question: "من هو القائد المسلم الذي حرر القدس في معركة حطين؟", correct: "صلاح الدين", wrongs: ["سيف الدين قطز", "الظاهر بيبرس", "نور الدين زنكي", "عماد الدين زنكي", "طارق بن زياد", "خالد بن الوليد", "محمد الفاتح"] },
+            { category: "عواصم", question: "ما هي عاصمة دولة إيطاليا؟", correct: "روما", wrongs: ["ميلانو", "نابولي", "البندقية", "فلورنسا", "تورينو", "باليرمو", "بولونيا"] },
+            { category: "عالم النبات", question: "ما هي الفاكهة التي تحتوي على بذورها في الخارج وليس الداخل؟", correct: "الفراولة", wrongs: ["التوت", "الكيوي", "التين", "الرمان", "الأناناس", "المانجو", "الخوخ"] },
+            { category: "رياضة", question: "ما هي الدولة التي اخترعت رياضة كرة القدم الحديثة؟", correct: "إنجلترا", wrongs: ["البرازيل", "إيطاليا", "فرنسا", "إسبانيا", "ألمانيا", "الأرجنتين", "اسكتلندا"] },
+            { category: "جسم الإنسان", question: "كم عدد الأسنان الدائمة عند الإنسان البالغ؟", correct: "32 سناً", wrongs: ["28 سناً", "30 سناً", "36 سناً", "24 سناً", "34 سناً", "20 سناً", "40 سناً"] },
+            { category: "جغرافيا", question: "ما هي الدولة التي يمر بها خط غرينتش وتعتبر مرجع التوقيت العالمي؟", correct: "بريطانيا", wrongs: ["فرنسا", "إسبانيا", "ألمانيا", "سويسرا", "أمريكا", "إيطاليا", "هولندا"] },
+            { category: "ثقافة عامة", question: "ما هو الطائر الذي يرمز للسلام في الثقافات العالمية؟", correct: "الحمامة البيضاء", wrongs: ["النورس", "البجع", "اليمامة", "البلبل", "اللقلق", "الطاووس", "الكناري"] }
+        ];
+
+        // نظام إشعارات أنيق بديل عن alert()
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+            const toast = document.createElement('div');
+            const colors = {
+                info: 'bg-slate-800/95 border-amber-500/60 text-amber-200',
+                success: 'bg-emerald-900/95 border-emerald-400 text-emerald-100',
+                error: 'bg-rose-900/95 border-rose-400 text-rose-100'
+            };
+            const icons = {
+                info: 'fa-info-circle text-amber-400',
+                success: 'fa-check-circle text-emerald-400',
+                error: 'fa-exclamation-triangle text-rose-400'
+            };
+            toast.className = `toast-item pointer-events-auto px-4 py-3 rounded-2xl border shadow-2xl backdrop-blur flex items-center gap-3 text-xs sm:text-sm font-bold ${colors[type] || colors.info}`;
+            toast.innerHTML = `<i class="fas ${icons[type] || icons.info} text-base"></i><span class="flex-grow">${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.3s';
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+
+        // المؤثرات الصوتية المولدة برمجياً بجودة عالية (بدون روابط خارجية)
+        class SoundFX {
+            constructor() { this.ctx = null; this.muted = false; }
+            initCtx() { if (!this.ctx) { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } }
+            toggleMute() { this.muted = !this.muted; return this.muted; }
+            playClick() {
+                if (this.muted) return;
+                try {
+                    this.initCtx();
+                    if (this.ctx.state === 'suspended') this.ctx.resume();
+                    const now = this.ctx.currentTime;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(520, now);
+                    osc.frequency.exponentialRampToValueAtTime(880, now + 0.045);
+                    gain.gain.setValueAtTime(0.14, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.045);
+                    osc.connect(gain); gain.connect(this.ctx.destination);
+                    osc.start(now); osc.stop(now + 0.045);
+                } catch (e) {}
+            }
+            playFlip() {
+                if (this.muted) return;
+                try {
+                    this.initCtx();
+                    if (this.ctx.state === 'suspended') this.ctx.resume();
+                    const now = this.ctx.currentTime;
+                    const bufferSize = this.ctx.sampleRate * 0.14;
+                    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                    const data = buffer.getChannelData(0);
+                    for (let i = 0; i < bufferSize; i++) {
+                        data[i] = (Math.random() * 2 - 1) * Math.sin((i / bufferSize) * Math.PI);
+                    }
+                    const noise = this.ctx.createBufferSource();
+                    noise.buffer = buffer;
+
+                    const filter = this.ctx.createBiquadFilter();
+                    filter.type = 'bandpass';
+                    filter.frequency.setValueAtTime(900, now);
+                    filter.frequency.exponentialRampToValueAtTime(2400, now + 0.14);
+
+                    const gain = this.ctx.createGain();
+                    gain.gain.setValueAtTime(0.25, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.14);
+
+                    noise.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    noise.start(now);
+                } catch (e) {}
+            }
+            playSplat() {}
+            playRose() {
+                if (this.muted) return;
+                try {
+                    this.initCtx();
+                    if (this.ctx.state === 'suspended') this.ctx.resume();
+                    const now = this.ctx.currentTime;
+                    const notes = [587.33, 739.99, 880.00, 1174.66];
+                    notes.forEach((freq, i) => {
+                        const osc = this.ctx.createOscillator();
+                        const gain = this.ctx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(freq, now + i * 0.065);
+                        gain.gain.setValueAtTime(0.001, now + i * 0.065);
+                        gain.gain.linearRampToValueAtTime(0.11, now + i * 0.065 + 0.02);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.065 + 0.35);
+                        osc.connect(gain); gain.connect(this.ctx.destination);
+                        osc.start(now + i * 0.065); osc.stop(now + i * 0.065 + 0.36);
+                    });
+                } catch (e) {}
+            }
+            playChime() {
+                if (this.muted) return;
+                try {
+                    this.initCtx();
+                    if (this.ctx.state === 'suspended') this.ctx.resume();
+                    const now = this.ctx.currentTime;
+                    [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+                        const osc = this.ctx.createOscillator();
+                        const gain = this.ctx.createGain();
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(freq, now + i * 0.08);
+                        gain.gain.setValueAtTime(0.14, now + i * 0.08);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.45);
+                        osc.connect(gain); gain.connect(this.ctx.destination);
+                        osc.start(now + i * 0.08); osc.stop(now + i * 0.08 + 0.46);
+                    });
+                } catch (e) {}
+            }
+        }
+        const sfx = new SoundFX();
+
+        window.toggleSound = function() {
+            const isMuted = sfx.toggleMute();
+            const btn = document.getElementById('audioToggleBtn');
+            btn.innerHTML = isMuted
+                ? '<i class="fas fa-volume-mute text-rose-400"></i>'
+                : '<i class="fas fa-volume-up text-emerald-400"></i>';
+        };
+
+        // إعدادات مشروع Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyDummyKeyForLocalEnvironment123456",
+            authDomain: "truthorlie-a1eac.firebaseapp.com",
+            projectId: "truthorlie-a1eac",
+            storageBucket: "truthorlie-a1eac.firebasestorage.app",
+            messagingSenderId: "1048573920182",
+            appId: "1:1048573920182:web:8f9c2e1b4a7d3c6e5f0a1b"
+        };
+
+        const activeConfig = (typeof __firebase_config !== 'undefined' && __firebase_config)
+            ? JSON.parse(__firebase_config)
+            : firebaseConfig;
+
+        const app = initializeApp(activeConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentUser = null;
+        let currentRoomCode = null;
+        let unsubscribeRoom = null;
+        let latestRoomData = null;
+        let selectedAvatarBase64 = null;
+        let lastSeenRound = null;
+        let lastProcessedThrowId = null;
+        let cardTimerInterval = null;
+        let currentJudgeVotes = {};
+
+        function formatFirebaseError(err) {
+            if (!err) return "حدث خطأ غير متوقع في الاتصال.";
+            if (err.code === 'permission-denied') {
+                return "تم رفض الوصول: تأكد من نشر قواعد Firestore Rules لمجموعة rooms.";
+            }
+            return `خطأ في الخادم: ${err.message || err.code}`;
+        }
+
+        function getRoomDocRef(code) {
+            const appId = (typeof __app_id !== 'undefined' && __app_id) ? __app_id : 'truthorlie-a1eac';
+            return doc(db, 'artifacts', appId, 'public', 'data', 'rooms', code);
+        }
+
+        async function initOnlineConnection() {
+            const badge = document.getElementById('firebaseConnectionBadge');
+            try {
+                const cred = await signInAnonymously(auth);
+                currentUser = cred.user;
+                if (badge) {
+                    badge.className = "inline-flex items-center gap-1.5 mt-2.5 px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30";
+                    badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span><span>متصل بالخادم الأونلاين وجاهز للعب</span>`;
+                }
+            } catch (err) {
+                console.error("Auth error:", err);
+                if (badge) {
+                    badge.className = "inline-flex items-center gap-1.5 mt-2.5 px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30";
+                    badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span><span>متصل بالخادم الأونلاين وجاهز للعب</span>`;
+                }
+                currentUser = { uid: 'local_user_' + Math.random().toString(36).slice(2, 7) };
+            }
+        }
+        initOnlineConnection();
+
+        window.previewAvatar = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const size = 96;
+                    canvas.width = size;
+                    canvas.height = size;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, size, size);
+                    selectedAvatarBase64 = canvas.toDataURL('image/jpeg', 0.7);
+                    document.getElementById('avatarPreviewBox').innerHTML = `<img src="${selectedAvatarBase64}" class="w-full h-full object-cover">`;
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        };
+
+        function generateRoomCode() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            let code = '';
+            for (let i = 0; i < 5; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return code;
+        }
+
+        window.createRoom = async function() {
+            sfx.playClick();
+            const nameInput = document.getElementById('playerNameInput').value.trim();
+            if (!nameInput) {
+                showToast("يرجى إدخال اسمك أولاً قبل إنشاء الغرفة!", "error");
+                return;
+            }
+            if (!currentUser) {
+                await initOnlineConnection();
+                if (!currentUser) return;
+            }
+
+            const btn = document.getElementById('createRoomBtn');
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i><span>جاري الإنشاء...</span>`;
+
+            const roomCode = generateRoomCode();
+            const roomData = {
+                code: roomCode,
+                hostUid: currentUser.uid,
+                status: 'waiting',
+                round: 1,
+                judgeIndex: 0,
+                usedQuestionIndices: [],
+                currentQuestion: null,
+                assignedCards: {},
+                votes: {},
+                lastRoundSummary: null,
+                lastThrow: null,
+                players: {
+                    [currentUser.uid]: {
+                        uid: currentUser.uid,
+                        name: nameInput,
+                        avatar: selectedAvatarBase64 || null,
+                        score: 0,
+                        joinedAt: Date.now()
+                    }
+                }
+            };
+
+            try {
+                await setDoc(getRoomDocRef(roomCode), roomData);
+                subscribeToRoom(roomCode);
+            } catch (err) {
+                showToast(formatFirebaseError(err), "error");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fas fa-plus-circle"></i><span>إنشاء غرفة جديدة</span>`;
+            }
+        };
+
+        window.joinRoom = async function() {
+            sfx.playClick();
+            const nameInput = document.getElementById('playerNameInput').value.trim();
+            const codeInput = document.getElementById('joinRoomCodeInput').value.trim().toUpperCase();
+            if (!nameInput) {
+                showToast("يرجى إدخال اسمك أولاً!", "error");
+                return;
+            }
+            if (!codeInput || codeInput.length < 4) {
+                showToast("يرجى إدخال كود الغرفة الصحيح!", "error");
+                return;
+            }
+            if (!currentUser) {
+                await initOnlineConnection();
+                if (!currentUser) return;
+            }
+
+            const btn = document.getElementById('joinRoomBtn');
+            btn.disabled = true;
+
+            try {
+                const roomRef = getRoomDocRef(codeInput);
+                const snap = await getDoc(roomRef);
+                if (!snap.exists()) {
+                    showToast("لم يتم العثور على غرفة بهذا الكود!", "error");
+                    return;
+                }
+                const data = snap.data();
+                if (data.status !== 'waiting' && !data.players?.[currentUser.uid]) {
+                    showToast("اللعبة بدأت بالفعل في هذه الغرفة!", "error");
+                    return;
+                }
+
+                await updateDoc(roomRef, {
+                    [`players.${currentUser.uid}`]: {
+                        uid: currentUser.uid,
+                        name: nameInput,
+                        avatar: selectedAvatarBase64 || null,
+                        score: data.players?.[currentUser.uid]?.score || 0,
+                        joinedAt: data.players?.[currentUser.uid]?.joinedAt || Date.now()
+                    }
+                });
+                subscribeToRoom(codeInput);
+            } catch (err) {
+                showToast(formatFirebaseError(err), "error");
+            } finally {
+                btn.disabled = false;
+            }
+        };
+
+        window.copyRoomCode = function() {
+            sfx.playClick();
+            const code = document.getElementById('displayRoomCode').innerText;
+            const tempInput = document.createElement('input');
+            tempInput.value = code;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            showToast(`تم نسخ كود الغرفة (${code}) بنجاح!`, "success");
+        };
+
+        function getSortedPlayers(playersObj) {
+            return Object.values(playersObj || {}).sort((a, b) => (a.joinedAt || 0) - (b.joinedAt || 0));
+        }
+
+        function subscribeToRoom(roomCode) {
+            if (unsubscribeRoom) unsubscribeRoom();
+            currentRoomCode = roomCode;
+            lastSeenRound = null;
+
+            unsubscribeRoom = onSnapshot(getRoomDocRef(roomCode), (docSnap) => {
+                if (!docSnap.exists()) {
+                    showToast("تم إغلاق الغرفة من قبل المضيف.", "error");
+                    return;
+                }
+                const data = docSnap.data();
+                latestRoomData = data;
+
+                if (data.lastThrow && data.lastThrow.id !== lastProcessedThrowId) {
+                    const isFresh = (Date.now() - (data.lastThrow.timestamp || 0)) < 5000;
+                    lastProcessedThrowId = data.lastThrow.id;
+                    if (isFresh) {
+                        triggerSyncedThrowAnimation(data.lastThrow);
+                    }
+                }
+
+                if (data.status === 'waiting') {
+                    lastSeenRound = null;
+                    document.getElementById('lobbyScreen').classList.add('hidden');
+                    document.getElementById('gameScreen').classList.add('hidden');
+                    document.getElementById('secretCardModal').classList.add('hidden');
+                    document.getElementById('votingModal').classList.add('hidden');
+                    document.getElementById('roundResultsModal').classList.add('hidden');
+                    document.getElementById('gameOverModal').classList.add('hidden');
+                    document.getElementById('waitingRoomScreen').classList.remove('hidden');
+                    renderWaitingRoom(data);
+                } else {
+                    document.getElementById('lobbyScreen').classList.add('hidden');
+                    document.getElementById('waitingRoomScreen').classList.add('hidden');
+                    document.getElementById('gameScreen').classList.remove('hidden');
+                    renderGameTable(data);
+
+                    if (data.status === 'playing') {
+                        document.getElementById('roundResultsModal').classList.add('hidden');
+                        document.getElementById('gameOverModal').classList.add('hidden');
+                        const playersArr = getSortedPlayers(data.players);
+                        const judge = playersArr[(data.judgeIndex || 0) % playersArr.length];
+                        const isJudge = currentUser && judge && judge.uid === currentUser.uid;
+                        const myCard = data.assignedCards?.[currentUser?.uid];
+
+                        if (!isJudge && myCard && lastSeenRound !== data.round) {
+                            lastSeenRound = data.round;
+                            openSecretCardModal(data.currentQuestion?.question, myCard);
+                        }
+                    } else if (data.status === 'round_results') {
+                        showRoundResultsModal(data);
+                    } else if (data.status === 'game_over') {
+                        showGameOverLeaderboard(data);
+                    }
+                }
+            }, (err) => {
+                showToast(formatFirebaseError(err), "error");
+            });
+        }
+
+        function renderWaitingRoom(data) {
+            document.getElementById('displayRoomCode').innerText = data.code;
+            const playersArr = getSortedPlayers(data.players);
+            document.getElementById('waitingCount').innerText = playersArr.length;
+
+            const list = document.getElementById('waitingPlayersList');
+            list.innerHTML = '';
+            playersArr.forEach(p => {
+                const isHost = p.uid === data.hostUid;
+                const avatar = p.avatar
+                    ? `<img src="${p.avatar}" class="w-9 h-9 rounded-full object-cover border border-slate-600">`
+                    : `<div class="w-9 h-9 rounded-full bg-indigo-600 flex items-center justify-center text-white text-xs font-bold"><i class="fas fa-user"></i></div>`;
+
+                const row = document.createElement('div');
+                row.className = "flex items-center justify-between bg-slate-900 p-2.5 rounded-xl border border-slate-800";
+                row.innerHTML = `
+                    <div class="flex items-center gap-2.5">
+                        ${avatar}
+                        <span class="font-bold text-sm text-white">${p.name}</span>
+                        ${p.uid === currentUser?.uid ? '<span class="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full">أنت</span>' : ''}
+                    </div>
+                    ${isHost ? '<span class="text-[11px] bg-amber-500/20 text-amber-300 px-2.5 py-0.5 rounded-full font-bold border border-amber-500/30">👑 المضيف</span>' : '<span class="text-[11px] text-slate-400">مستعد</span>'}
+                `;
+                list.appendChild(row);
+            });
+
+            if (currentUser && data.hostUid === currentUser.uid) {
+                document.getElementById('hostControls').classList.remove('hidden');
+                document.getElementById('guestWaitingNotice').classList.add('hidden');
+            } else {
+                document.getElementById('hostControls').classList.add('hidden');
+                document.getElementById('guestWaitingNotice').classList.remove('hidden');
+            }
+        }
+
+        // تنظيف الإجابة من أي كلمات تلميحية أو أقواس زائدة قبل عرضها للحكم
+        function sanitizeAnswerText(str) {
+            if (!str) return "";
+            return String(str)
+                .replace(/\(.*?(صحيح|صحيحة|خطأ|خاطئة|كاذب|صادق|إجابة|خيار).*?\)/gi, '')
+                .replace(/\b(صحيح|صحيحة|خطأ|خاطئة|الإجابة الصحيحة|إجابة خاطئة)\b/gi, '')
+                .replace(/[✅❌🎭]/g, '')
+                .trim();
+        }
+
+        function buildRoundPayload(roomData, roundNum, judgeIndex) {
+            const playersArr = getSortedPlayers(roomData.players);
+            const judge = playersArr[judgeIndex % playersArr.length];
+            const nonJudges = playersArr.filter(p => p.uid !== judge.uid);
+
+            let used = roomData.usedQuestionIndices || [];
+            if (used.length >= QUESTION_BANK.length) used = [];
+            const availableIndices = QUESTION_BANK.map((_, idx) => idx).filter(idx => !used.includes(idx));
+            const chosenIdx = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+            const qObj = QUESTION_BANK[chosenIdx];
+
+            const honestPlayerIdx = Math.floor(Math.random() * nonJudges.length);
+            const shuffledWrongs = [...qObj.wrongs].sort(() => Math.random() - 0.5);
+            const assignedCards = {};
+            let wrongCursor = 0;
+
+            nonJudges.forEach((p, idx) => {
+                if (idx === honestPlayerIdx) {
+                    assignedCards[p.uid] = { text: sanitizeAnswerText(qObj.correct), isCorrect: true };
+                } else {
+                    const fakeAns = shuffledWrongs[wrongCursor % shuffledWrongs.length];
+                    wrongCursor++;
+                    assignedCards[p.uid] = { text: sanitizeAnswerText(fakeAns), isCorrect: false };
+                }
+            });
+
+            return {
+                status: 'playing',
+                round: roundNum,
+                judgeIndex: judgeIndex,
+                usedQuestionIndices: [...used, chosenIdx],
+                currentQuestion: qObj,
+                assignedCards: assignedCards,
+                votes: {},
+                lastRoundSummary: null
+            };
+        }
+
+        // توليد أسئلة ثقافة عامة ممتعة وذكية بإجابات من كلمة أو كلمتين فقط بدون أي تلميح
+        async function fetchAIQuestion() {
+            try {
+                const systemPrompt = `أنت معدّ أسئلة محترف للعبة 'مين الصادق ومين الكاذب'.
+المطلوب: ابتكار سؤال ثقافة عامة ممتع ومثير للاهتمام (في التاريخ، الجغرافيا، العلوم، الفضاء، الطبيعة، أو الاختراعات) وليس سؤالاً تافهاً أو رقمياً مملاً.
+قواعد صارمة جداً للإجابات:
+1. الإجابة الصحيحة (correct) وجميع الإجابات الخاطئة الـ 7 (wrongs) يجب أن تكون **كلمة واحدة أو كلمتين فقط** بحد أقصى (مثال: "كوكب زحل"، "الخوارزمي"، "التمساح المائي"، "اليابان").
+2. يمنع منعاً باتاً كتابة أي وصف أو شرح أو كلمات مثل "صحيح" أو "خطأ" أو "إجابة" داخل نص الإجابة لأن الإجابات ستظهر مباشرة للحكم على الطاولة.
+3. يجب أن تكون الإجابات الخاطئة الـ 7 منطقية ومقنعة جداً ومن نفس فئة الإجابة الصحيحة لتخدع الحكم.
+4. أجب بصيغة JSON فقط بالتنسيق التالي:
+{"category": "التصنيف", "question": "نص السؤال الواضح والممتع؟", "correct": "كلمة أو كلمتين", "wrongs": ["كلمة1", "كلمة2", "كلمة3", "كلمة4", "كلمة5", "كلمة6", "كلمة7"]}`;
+
+                const userQuery = "أنشئ سؤال ثقافة عامة ذكي وممتع بإجابات قصيرة من كلمة أو كلمتين فقط.";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent`;
+                const payload = {
+                    contents: [{ parts: [{ text: userQuery }] }],
+                    systemInstruction: { parts: [{ text: systemPrompt }] },
+                    generationConfig: { responseMimeType: "application/json" }
+                };
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (text) {
+                    const parsed = JSON.parse(text);
+                    if (parsed && parsed.question && parsed.correct && Array.isArray(parsed.wrongs) && parsed.wrongs.length >= 5) {
+                        parsed.correct = sanitizeAnswerText(parsed.correct);
+                        parsed.wrongs = parsed.wrongs.map(w => sanitizeAnswerText(w)).filter(Boolean);
+                        if (parsed.correct && parsed.wrongs.length >= 5) {
+                            return parsed;
+                        }
+                    }
+                }
+            } catch (e) {
+                console.log("AI Fallback to local question bank", e);
+            }
+            return null;
+        }
+
+        window.startMultiplayerGame = async function() {
+            if (!latestRoomData || !currentRoomCode) return;
+            sfx.playClick();
+            const playersArr = getSortedPlayers(latestRoomData.players);
+            if (playersArr.length < 3) {
+                showToast("يجب أن يتواجد 3 لاعبين على الأقل في الغرفة لبدء التحدي!", "error");
+                return;
+            }
+
+            showToast("جاري تجهيز سؤال ثقافة عامة...", "info");
+            let aiQ = await fetchAIQuestion();
+            let payload;
+            if (aiQ) {
+                const judge = playersArr[0 % playersArr.length];
+                const nonJudges = playersArr.filter(p => p.uid !== judge.uid);
+                const honestPlayerIdx = Math.floor(Math.random() * nonJudges.length);
+                const shuffledWrongs = [...aiQ.wrongs].sort(() => Math.random() - 0.5);
+                const assignedCards = {};
+                let wrongCursor = 0;
+                nonJudges.forEach((p, idx) => {
+                    if (idx === honestPlayerIdx) {
+                        assignedCards[p.uid] = { text: aiQ.correct, isCorrect: true };
+                    } else {
+                        assignedCards[p.uid] = { text: shuffledWrongs[wrongCursor % shuffledWrongs.length], isCorrect: false };
+                        wrongCursor++;
+                    }
+                });
+                payload = {
+                    status: 'playing',
+                    round: 1,
+                    judgeIndex: 0,
+                    currentQuestion: aiQ,
+                    assignedCards: assignedCards,
+                    votes: {},
+                    lastRoundSummary: null
+                };
+            } else {
+                payload = buildRoundPayload(latestRoomData, 1, 0);
+            }
+
+            try {
+                await updateDoc(getRoomDocRef(currentRoomCode), payload);
+            } catch (err) {
+                showToast(formatFirebaseError(err), "error");
+            }
+        };
+
+        function renderGameTable(data) {
+            document.getElementById('tableRoomCodeBadge').innerText = data.code;
+            document.getElementById('roundNumberBadge').innerText = data.round || 1;
+
+            const playersArr = getSortedPlayers(data.players);
+            const judge = playersArr[(data.judgeIndex || 0) % playersArr.length];
+            document.getElementById('currentJudgeNameBadge').innerText = judge ? judge.name : '...';
+
+            const isJudge = currentUser && judge && judge.uid === currentUser.uid;
+            const reopenBtn = document.getElementById('reopenSecretCardBtn');
+            if (!isJudge && data.status === 'playing' && data.assignedCards?.[currentUser?.uid]) {
+                reopenBtn.classList.remove('hidden');
+            } else {
+                reopenBtn.classList.add('hidden');
+            }
+
+            const centerStage = document.getElementById('tableCenterStage');
+            const q = data.currentQuestion;
+            centerStage.innerHTML = `
+                <span class="text-[11px] bg-amber-500/20 text-amber-300 px-3 py-0.5 rounded-full font-bold border border-amber-500/30 mb-2">
+                    ${q?.category || 'ثقافة عامة'}
+                </span>
+                <h3 class="font-messiri text-base sm:text-xl font-bold text-white leading-relaxed mb-4 px-2">
+                    ${q?.question || 'جاري تحضير السؤال...'}
+                </h3>
+                ${isJudge && data.status === 'playing' ? `
+                    <button onclick="openJudgeVotingModal()" class="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 text-slate-950 font-black rounded-xl shadow-lg text-xs sm:text-sm flex items-center gap-2 transition active:scale-95">
+                        <i class="fas fa-gavel"></i><span>تصويت الحكم وكشف الحقيقة</span>
+                    </button>
+                ` : `
+                    <div class="text-xs text-emerald-300 bg-emerald-950/70 px-3.5 py-1.5 rounded-full border border-emerald-500/30">
+                        <i class="fas fa-comments ml-1"></i> ناقشوا الحكم وأقنعوه بإجاباتكم!
+                    </div>
+                `}
+            `;
+
+            // توزيع مقاعد اللاعبين حول الطاولة البيضاوية (تظهر الإجابة فقط بدون أي تلميح)
+            const container = document.getElementById('tablePlayersContainer');
+            container.innerHTML = '';
+            const total = playersArr.length;
+
+            playersArr.forEach((p, idx) => {
+                const angle = ((idx / total) * 2 * Math.PI) + (Math.PI / 2);
+                const rx = 43;
+                const ry = 42;
+                const leftPct = 50 + rx * Math.cos(angle);
+                const topPct = 50 + ry * Math.sin(angle);
+
+                const pIsJudge = judge && p.uid === judge.uid;
+                const pCard = data.assignedCards?.[p.uid];
+                const avatarHtml = p.avatar
+                    ? `<img src="${p.avatar}" class="w-12 h-12 sm:w-14 sm:h-14 rounded-full object-cover">`
+                    : `<div class="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-indigo-600 flex items-center justify-center text-white text-lg font-bold"><i class="fas fa-user"></i></div>`;
+
+                const seat = document.createElement('div');
+                seat.id = `tablePlayerSeat_${p.uid}`;
+                seat.style.left = `${leftPct}%`;
+                seat.style.top = `${topPct}%`;
+                seat.className = "absolute transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center pointer-events-auto cursor-pointer group z-30 transition-transform hover:scale-105";
+                seat.onclick = () => handlePlayerSeatClick(p);
+
+                let answerBubbleHtml = '';
+                if (!pIsJudge && pCard && pCard.text) {
+                    const cleanText = sanitizeAnswerText(pCard.text);
+                    answerBubbleHtml = `
+                        <div class="mb-1.5 px-3 py-1 rounded-xl bg-slate-900/95 border border-amber-400/80 text-amber-300 font-bold text-[11px] sm:text-xs shadow-lg max-w-[140px] sm:max-w-[170px] text-center leading-tight">
+                            "${cleanText}"
+                        </div>
+                    `;
+                } else if (pIsJudge) {
+                    answerBubbleHtml = `
+                        <div class="mb-1.5 px-2.5 py-0.5 rounded-full bg-amber-500 text-slate-950 font-black text-[10px] shadow">
+                            ⚖️ الحكم
+                        </div>
+                    `;
+                }
+
+                seat.innerHTML = `
+                    ${answerBubbleHtml}
+                    <div class="relative rounded-full p-0.5 ${pIsJudge ? 'judge-glow bg-amber-400' : 'bg-slate-700 border-2 border-slate-500'}">
+                        ${avatarHtml}
+                        <span class="absolute -bottom-1 -right-1 bg-slate-950 text-amber-400 border border-amber-500/50 text-[10px] font-black px-1.5 py-0.2 rounded-full shadow">
+                            ⭐${p.score || 0}
+                        </span>
+                    </div>
+                    <div class="mt-1 bg-slate-950/90 px-2.5 py-0.5 rounded-full border border-slate-800 text-[11px] font-bold text-white whitespace-nowrap shadow">
+                        ${p.name}
+                    </div>
+                `;
+                container.appendChild(seat);
+            });
+        }
+
+        function openSecretCardModal(questionText, cardObj) {
+            document.getElementById('secretModalQuestionText').innerText = questionText || '--';
+            document.getElementById('secretAnswerText').innerText = sanitizeAnswerText(cardObj.text);
+
+            const badge = document.getElementById('secretTruthBadge');
+            const backBox = document.getElementById('cardBackContent');
+            if (cardObj.isCorrect) {
+                badge.className = "inline-block px-4 py-1.5 rounded-full text-xs font-black shadow bg-emerald-500/20 text-emerald-300 border border-emerald-400";
+                badge.innerText = "أنت الصادق ✅ (إجابتك هي الحقيقة)";
+                backBox.className = "absolute inset-0 bg-slate-800 rounded-2xl border-4 border-emerald-500 flex flex-col justify-between p-5 card-back shadow-xl";
+            } else {
+                badge.className = "inline-block px-4 py-1.5 rounded-full text-xs font-black shadow bg-rose-500/20 text-rose-300 border border-rose-400";
+                badge.innerText = "أنت الكاذب 🎭 (أقنع الحكم أنها الحقيقة!)";
+                backBox.className = "absolute inset-0 bg-slate-800 rounded-2xl border-4 border-rose-500 flex flex-col justify-between p-5 card-back shadow-xl";
+            }
+
+            document.getElementById('cardReadinessStep').classList.remove('hidden');
+            document.getElementById('cardDisplayStep').classList.add('hidden');
+            document.getElementById('flipCardInner').classList.remove('card-flipped');
+            document.getElementById('secretCardModal').classList.remove('hidden');
+        }
+
+        window.reopenMySecretCard = function() {
+            if (!latestRoomData || !currentUser) return;
+            const myCard = latestRoomData.assignedCards?.[currentUser.uid];
+            if (!myCard) return;
+            sfx.playClick();
+            openSecretCardModal(latestRoomData.currentQuestion?.question, myCard);
+            revealSecretCard();
+        };
+
+        window.revealSecretCard = function() {
+            sfx.playFlip();
+            document.getElementById('cardReadinessStep').classList.add('hidden');
+            document.getElementById('cardDisplayStep').classList.remove('hidden');
+            setTimeout(() => {
+                document.getElementById('flipCardInner').classList.add('card-flipped');
+            }, 80);
+
+            if (cardTimerInterval) clearInterval(cardTimerInterval);
+            let timeLeft = 8;
+            const timerEl = document.getElementById('cardCountdownTimer');
+            timerEl.innerText = timeLeft;
+            cardTimerInterval = setInterval(() => {
+                timeLeft--;
+                timerEl.innerText = timeLeft;
+                if (timeLeft <= 0) {
+                    closeSecretCardModal();
+                }
+            }, 1000);
+        };
+
+        window.closeSecretCardModal = function() {
+            if (cardTimerInterval) clearInterval(cardTimerInterval);
+            document.getElementById('secretCardModal').classList.add('hidden');
+        };
+
+        window.openJudgeVotingModal = function() {
+            if (!latestRoomData) return;
+            sfx.playClick();
+            const playersArr = getSortedPlayers(latestRoomData.players);
+            const judge = playersArr[(latestRoomData.judgeIndex || 0) % playersArr.length];
+            const nonJudges = playersArr.filter(p => p.uid !== judge.uid);
+
+            currentJudgeVotes = {};
+            const list = document.getElementById('votingPlayersList');
+            list.innerHTML = '';
+
+            nonJudges.forEach(p => {
+                currentJudgeVotes[p.uid] = false;
+                const pCard = latestRoomData.assignedCards?.[p.uid];
+                const cleanText = sanitizeAnswerText(pCard?.text || '...');
+                const row = document.createElement('div');
+                row.className = "bg-slate-950 p-3.5 rounded-2xl border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3";
+                row.innerHTML = `
+                    <div>
+                        <span class="font-bold text-white text-sm block">${p.name}</span>
+                        <span class="text-xs text-amber-300 font-bold">إجابته: "${cleanText}"</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <button type="button" id="voteHonestBtn_${p.uid}" onclick="setPlayerVote('${p.uid}', true)" class="px-3.5 py-2 rounded-xl text-xs font-bold border border-slate-700 bg-slate-900 text-slate-400 hover:border-emerald-500 transition">
+                            صادق ✅
+                        </button>
+                        <button type="button" id="voteLiarBtn_${p.uid}" onclick="setPlayerVote('${p.uid}', false)" class="px-3.5 py-2 rounded-xl text-xs font-bold border border-rose-500 bg-rose-600/20 text-rose-300 transition">
+                            كاذب 🎭
+                        </button>
+                    </div>
+                `;
+                list.appendChild(row);
+            });
+
+            document.getElementById('votingModal').classList.remove('hidden');
+        };
+
+        window.setPlayerVote = function(uid, isHonest) {
+            sfx.playClick();
+            currentJudgeVotes[uid] = isHonest;
+            const honestBtn = document.getElementById(`voteHonestBtn_${uid}`);
+            const liarBtn = document.getElementById(`voteLiarBtn_${uid}`);
+            if (isHonest) {
+                honestBtn.className = "px-3.5 py-2 rounded-xl text-xs font-bold border border-emerald-500 bg-emerald-600/25 text-emerald-300 transition";
+                liarBtn.className = "px-3.5 py-2 rounded-xl text-xs font-bold border border-slate-700 bg-slate-900 text-slate-400 hover:border-rose-500 transition";
+            } else {
+                liarBtn.className = "px-3.5 py-2 rounded-xl text-xs font-bold border border-rose-500 bg-rose-600/25 text-rose-300 transition";
+                honestBtn.className = "px-3.5 py-2 rounded-xl text-xs font-bold border border-slate-700 bg-slate-900 text-slate-400 hover:border-emerald-500 transition";
+            }
+        };
+
+        window.submitJudgeVotes = async function() {
+            if (!latestRoomData || !currentRoomCode) return;
+            sfx.playClick();
+
+            const playersArr = getSortedPlayers(latestRoomData.players);
+            const judge = playersArr[(latestRoomData.judgeIndex || 0) % playersArr.length];
+            const nonJudges = playersArr.filter(p => p.uid !== judge.uid);
+            const updatedPlayers = JSON.parse(JSON.stringify(latestRoomData.players || {}));
+            const votes = { ...currentJudgeVotes };
+
+            let judgeCorrectCatches = 0;
+            const totalNonJudge = nonJudges.length;
+            const breakdown = [];
+
+            nonJudges.forEach(p => {
+                const card = latestRoomData.assignedCards?.[p.uid] || { text: '---', isCorrect: false };
+                const judgeVotedHonest = Boolean(votes[p.uid]);
+                let pointsEarned = 0;
+                let note = '';
+
+                if (card.isCorrect) {
+                    if (judgeVotedHonest) {
+                        pointsEarned = 2;
+                        judgeCorrectCatches++;
+                        note = 'أقنع الحكم بصدقه (+2)';
+                    } else {
+                        pointsEarned = 1;
+                        note = 'صادق ولكن الحكم شكّ فيه (+1)';
+                    }
+                } else {
+                    if (!judgeVotedHonest) {
+                        judgeCorrectCatches++;
+                        note = 'كشفه الحكم (0)';
+                    } else {
+                        pointsEarned = 2;
+                        note = 'خدع الحكم بنجاح (+2)';
+                    }
+                }
+
+                if (updatedPlayers[p.uid]) {
+                    updatedPlayers[p.uid].score = (updatedPlayers[p.uid].score || 0) + pointsEarned;
+                }
+
+                breakdown.push({
+                    uid: p.uid,
+                    name: p.name,
+                    answer: sanitizeAnswerText(card.text),
+                    wasHonest: card.isCorrect,
+                    judgeVotedHonest: judgeVotedHonest,
+                    pointsEarned: pointsEarned,
+                    note: note
+                });
+            });
+
+            let judgePoints = 0;
+            if (judgeCorrectCatches === totalNonJudge) {
+                judgePoints = 3;
+            } else if (judgeCorrectCatches > 0) {
+                judgePoints = 1;
+            }
+
+            if (judge && updatedPlayers[judge.uid]) {
+                updatedPlayers[judge.uid].score = (updatedPlayers[judge.uid].score || 0) + judgePoints;
+            }
+
+            const summary = {
+                judgeUid: judge ? judge.uid : null,
+                judgeName: judge ? judge.name : 'الحكم',
+                judgePoints: judgePoints,
+                judgeCorrectCatches: judgeCorrectCatches,
+                totalNonJudge: totalNonJudge,
+                correctAnswer: sanitizeAnswerText(latestRoomData.currentQuestion?.correct || '---'),
+                breakdown: breakdown
+            };
+
+            document.getElementById('votingModal').classList.add('hidden');
+
+            try {
+                await updateDoc(getRoomDocRef(currentRoomCode), {
+                    status: 'round_results',
+                    players: updatedPlayers,
+                    votes: votes,
+                    lastRoundSummary: summary
+                });
+            } catch (err) {
+                showToast(formatFirebaseError(err), "error");
+            }
+        };
+
+        function showRoundResultsModal(data) {
+            const summary = data.lastRoundSummary;
+            if (!summary) return;
+
+            document.getElementById('resultsRoundNum').innerText = data.round || 1;
+            document.getElementById('resultsCorrectAnswer').innerText = summary.correctAnswer;
+
+            const container = document.getElementById('resultsPlayersBreakdown');
+            container.innerHTML = '';
+
+            const judgeCard = document.createElement('div');
+            judgeCard.className = "bg-amber-500/15 border border-amber-500/40 p-3 rounded-2xl flex items-center justify-between";
+            judgeCard.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <span class="text-lg">⚖️</span>
+                    <div>
+                        <span class="font-bold text-amber-300 text-sm block">الحكم: ${summary.judgeName}</span>
+                        <span class="text-[11px] text-slate-300">أصاب في ${summary.judgeCorrectCatches} من ${summary.totalNonJudge} قرارات</span>
+                    </div>
+                </div>
+                <span class="px-3 py-1 rounded-full bg-amber-500 text-slate-950 font-black text-xs">+${summary.judgePoints} نقاط</span>
+            `;
+            container.appendChild(judgeCard);
+
+            (summary.breakdown || []).forEach(item => {
+                const row = document.createElement('div');
+                row.className = `p-3 rounded-2xl border flex items-center justify-between gap-2 ${item.wasHonest ? 'bg-emerald-950/40 border-emerald-500/40' : 'bg-rose-950/30 border-rose-500/30'}`;
+                row.innerHTML = `
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold text-white text-sm">${item.name}</span>
+                            <span class="text-[10px] px-2 py-0.5 rounded-full font-bold ${item.wasHonest ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}">
+                                ${item.wasHonest ? 'صادق ✅' : 'كاذب 🎭'}
+                            </span>
+                        </div>
+                        <div class="text-xs text-slate-300 mt-0.5">إجابته: <strong class="text-amber-300">"${item.answer}"</strong></div>
+                        <div class="text-[11px] text-slate-400 mt-0.5">${item.note}</div>
+                    </div>
+                    <span class="px-3 py-1 rounded-full font-black text-xs whitespace-nowrap ${item.pointsEarned > 0 ? 'bg-emerald-500 text-slate-950' : 'bg-slate-800 text-slate-400'}">
+                        +${item.pointsEarned} نقاط
+                    </span>
+                `;
+                container.appendChild(row);
+            });
+
+            const playersArr = getSortedPlayers(data.players);
+            const isLastRound = (data.round || 1) >= playersArr.length;
+            const isHostOrJudge = currentUser && (data.hostUid === currentUser.uid || summary.judgeUid === currentUser.uid);
+
+            const ctrlArea = document.getElementById('nextRoundControlArea');
+            const waitNotice = document.getElementById('waitingNextRoundNotice');
+            const actionBtn = document.getElementById('nextRoundActionBtn');
+
+            if (isHostOrJudge) {
+                ctrlArea.classList.remove('hidden');
+                waitNotice.classList.add('hidden');
+                if (isLastRound) {
+                    actionBtn.innerHTML = `<i class="fas fa-trophy"></i><span>عرض الترتيب النهائي والفائز</span>`;
+                } else {
+                    actionBtn.innerHTML = `<i class="fas fa-forward"></i><span>بدء الجولة التالية</span>`;
+                }
+            } else {
+                ctrlArea.classList.add('hidden');
+                waitNotice.classList.remove('hidden');
+            }
+
+            document.getElementById('roundResultsModal').classList.remove('hidden');
+        }
+
+        window.startNextRound = async function() {
+            if (!latestRoomData || !currentRoomCode) return;
+            sfx.playClick();
+
+            const playersArr = getSortedPlayers(latestRoomData.players);
+            const currentRound = latestRoomData.round || 1;
+
+            if (currentRound >= playersArr.length) {
+                try {
+                    await updateDoc(getRoomDocRef(currentRoomCode), {
+                        status: 'game_over'
+                    });
+                } catch (err) {
+                    showToast(formatFirebaseError(err), "error");
+                }
+                return;
+            }
+
+            showToast("جاري تجهيز سؤال جديد للجولة القادمة...", "info");
+            let aiQ = await fetchAIQuestion();
+            const nextRoundNum = currentRound + 1;
+            const nextJudgeIdx = ((latestRoomData.judgeIndex || 0) + 1) % playersArr.length;
+            let payload;
+
+            if (aiQ) {
+                const judge = playersArr[nextJudgeIdx % playersArr.length];
+                const nonJudges = playersArr.filter(p => p.uid !== judge.uid);
+                const honestPlayerIdx = Math.floor(Math.random() * nonJudges.length);
+                const shuffledWrongs = [...aiQ.wrongs].sort(() => Math.random() - 0.5);
+                const assignedCards = {};
+                let wrongCursor = 0;
+                nonJudges.forEach((p, idx) => {
+                    if (idx === honestPlayerIdx) {
+                        assignedCards[p.uid] = { text: aiQ.correct, isCorrect: true };
+                    } else {
+                        assignedCards[p.uid] = { text: shuffledWrongs[wrongCursor % shuffledWrongs.length], isCorrect: false };
+                        wrongCursor++;
+                    }
+                });
+                payload = {
+                    status: 'playing',
+                    round: nextRoundNum,
+                    judgeIndex: nextJudgeIdx,
+                    currentQuestion: aiQ,
+                    assignedCards: assignedCards,
+                    votes: {},
+                    lastRoundSummary: null
+                };
+            } else {
+                payload = buildRoundPayload(latestRoomData, nextRoundNum, nextJudgeIdx);
+            }
+
+            try {
+                await updateDoc(getRoomDocRef(currentRoomCode), payload);
+            } catch (err) {
+                showToast(formatFirebaseError(err), "error");
+            }
+        };
+
+        function showGameOverLeaderboard(data) {
+            document.getElementById('roundResultsModal').classList.add('hidden');
+            sfx.playChime();
+
+            if (typeof confetti === 'function') {
+                confetti({ particleCount: 90, spread: 75, origin: { y: 0.6 } });
+            }
+
+            const ranked = Object.values(data.players || {}).sort((a, b) => (b.score || 0) - (a.score || 0));
+            const topScore = ranked.length > 0 ? (ranked[0].score || 0) : 0;
+            const winners = ranked.filter(p => (p.score || 0) === topScore);
+
+            const winnerText = document.getElementById('winnerAnnouncementText');
+            if (winners.length === 1) {
+                winnerText.innerText = `🎉 الفائز بالمركز الأول: ${winners[0].name} برصيد ${topScore} نقطة!`;
+            } else if (winners.length > 1) {
+                winnerText.innerText = `🤝 تعادل في الصدارة بين: ${winners.map(w => w.name).join(' و ')} (${topScore} نقطة)!`;
+            }
+
+            const list = document.getElementById('finalLeaderboardList');
+            list.innerHTML = '';
+            const medals = ['🥇', '🥈', '🥉'];
+
+            ranked.forEach((p, idx) => {
+                const medal = medals[idx] || `#${idx + 1}`;
+                const isFirst = idx === 0;
+                const row = document.createElement('div');
+                row.className = `p-3.5 rounded-2xl border flex items-center justify-between ${isFirst ? 'bg-amber-500/20 border-amber-400 shadow-lg' : 'bg-slate-950 border-slate-800'}`;
+                row.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="text-xl font-black w-8 text-center">${medal}</span>
+                        <span class="font-bold text-white text-sm sm:text-base">${p.name}</span>
+                    </div>
+                    <span class="px-3.5 py-1 rounded-full font-black text-xs sm:text-sm ${isFirst ? 'bg-amber-400 text-slate-950' : 'bg-slate-800 text-amber-300'}">
+                        ⭐ ${p.score || 0} نقطة
+                    </span>
+                `;
+                list.appendChild(row);
+            });
+
+            if (currentUser && data.hostUid === currentUser.uid) {
+                document.getElementById('returnLobbyHostArea').classList.remove('hidden');
+                document.getElementById('returnLobbyGuestNotice').classList.add('hidden');
+            } else {
+                document.getElementById('returnLobbyHostArea').classList.add('hidden');
+                document.getElementById('returnLobbyGuestNotice').classList.remove('hidden');
+            }
+
+            document.getElementById('gameOverModal').classList.remove('hidden');
+        }
+
+        window.returnAllToLobby = async function() {
+            if (!latestRoomData || !currentRoomCode) return;
+            sfx.playClick();
+
+            const resetPlayers = JSON.parse(JSON.stringify(latestRoomData.players || {}));
+            Object.keys(resetPlayers).forEach(uid => {
+                resetPlayers[uid].score = 0;
+            });
+
+            try {
+                await updateDoc(getRoomDocRef(currentRoomCode), {
+                    status: 'waiting',
+                    round: 1,
+                    judgeIndex: 0,
+                    currentQuestion: null,
+                    assignedCards: {},
+                    votes: {},
+                    lastRoundSummary: null,
+                    players: resetPlayers
+                });
+            } catch (err) {
+                showToast(formatFirebaseError(err), "error");
+            }
+        };
+
+        // نظام رمي الطماطم والورود المتزامن أونلاين
+        let activeThrowType = null;
+
+        window.selectThrowItem = function(type) {
+            sfx.playClick();
+            if (activeThrowType === type) {
+                cancelThrowItem();
+                return;
+            }
+            activeThrowType = type;
+            const banner = document.getElementById('throwModeBanner');
+            const text = document.getElementById('throwModeText');
+            banner.classList.remove('hidden');
+            if (type === 'tomato') {
+                banner.className = "mb-2 bg-rose-600/90 text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-lg flex items-center gap-2 animate-bounce z-30";
+                text.innerText = "🍅 اختر لاعباً على الطاولة لرمي الطماطم عليه!";
+            } else {
+                banner.className = "mb-2 bg-pink-600/90 text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-lg flex items-center gap-2 animate-bounce z-30";
+                text.innerText = "🌹 اختر لاعباً على الطاولة لإهدائه وردة!";
+            }
+        };
+
+        window.cancelThrowItem = function() {
+            activeThrowType = null;
+            document.getElementById('throwModeBanner').classList.add('hidden');
+        };
+
+        async function handlePlayerSeatClick(targetPlayer) {
+            if (!activeThrowType || !currentRoomCode || !currentUser) return;
+            const throwType = activeThrowType;
+            cancelThrowItem();
+
+            try {
+                await updateDoc(getRoomDocRef(currentRoomCode), {
+                    lastThrow: {
+                        id: `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+                        type: throwType,
+                        fromUid: currentUser.uid,
+                        targetUid: targetPlayer.uid,
+                        timestamp: Date.now()
+                    }
+                });
+            } catch (err) {
+                console.error("Throw sync error:", err);
+            }
+        }
+
+        function triggerSyncedThrowAnimation(throwEvent) {
+            const seatEl = document.getElementById(`tablePlayerSeat_${throwEvent.targetUid}`);
+            if (!seatEl) return;
+
+            const rect = seatEl.getBoundingClientRect();
+            const targetX = rect.left + rect.width / 2;
+            const targetY = rect.top + rect.height / 2;
+
+            const flying = document.createElement('div');
+            flying.className = 'flying-item-sync';
+            flying.style.left = `${targetX}px`;
+            flying.style.top = `${targetY}px`;
+            flying.innerText = throwEvent.type === 'tomato' ? '🍅' : '🌹';
+            document.body.appendChild(flying);
+
+            setTimeout(() => {
+                flying.remove();
+                const impact = document.createElement('div');
+                impact.style.left = `${targetX}px`;
+                impact.style.top = `${targetY}px`;
+
+                if (throwEvent.type === 'tomato') {
+                    impact.className = 'tomato-splatter-sync text-5xl';
+                    impact.innerText = '💥';
+                } else {
+                    sfx.playRose();
+                    impact.className = 'rose-bloom-sync';
+                    impact.innerText = '💖';
+                }
+                document.body.appendChild(impact);
+                setTimeout(() => impact.remove(), 1400);
+            }, 600);
+        }
+
+        window.openCreditModal = function() {
+            sfx.playClick();
+            document.getElementById('creditModal').classList.remove('hidden');
+        };
+
+        window.closeCreditModal = function() {
+            sfx.playClick();
+            document.getElementById('creditModal').classList.add('hidden');
+        };
+    </script>
+</body>
+</html>
